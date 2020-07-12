@@ -204,7 +204,7 @@ class HtmlTable:
         self.parsed_lines = parsed_lines
         self.html_text = ""
 
-    def make_html(self, column_subset, link_cb):
+    def make_html(self, column_subset, link_cb, is_editable):
         if self.html_text != "":
             return self.html_text
         if link_cb is None:
@@ -225,7 +225,10 @@ class HtmlTable:
                             ret += '<td>{}</td>'.format(link_cb(line, pos))
                     ret += '</tr>\n'
             else:
-                ret += '<tr><td><pre>{}</pre></td></tr>'.format(self.parsed_lines)
+                ret += '<tr><td>'
+                if is_editable:
+                    ret += '<input type="button" value = "edit"/><br/>'
+                ret += '<pre>{}</pre></td></tr>'.format(self.parsed_lines)
             ret += '</table>'
 
         self.html_text = ret
@@ -272,7 +275,7 @@ class ApiResources:
         html = '<b>{}</b></br>'.format(get_home_link())
 
         if self.html_table:
-            html += self.html_table.make_html(column_subset, self.make_object_link)
+            html += self.html_table.make_html(column_subset, self.make_object_link, False)
         else:
             html += self.error_message
 
@@ -320,7 +323,7 @@ class ObjectListScreen:
         ret += self.make_query_fields()
 
         if self.html_table is not None:
-            return ret + self.html_table.make_html(None, self.make_object_link)
+            return ret + self.html_table.make_html(None, self.make_object_link, False)
         return ret + self.error_message
 
     def get_self_link(self):
@@ -373,7 +376,7 @@ class CrdScreen:
             self.namespace_index = find_index_in_list(html_table.titles, "NAMESPACE")
             self.name_index = find_index_in_list(html_table.titles, "NAME")
 
-            return hdr + html_table.make_html(None, self.make_object_link)
+            return hdr + html_table.make_html(None, self.make_object_link, False)
         return hdr + make_error_message(run_command)
 
 
@@ -407,7 +410,10 @@ class ObjectDetailScreenBase:
         for request_def in self.request_types:
             if screentype == request_def[0]:
                 cmd = ObjectDetailScreen.make_kubectl_cmd(request_def, namespace, otype, oname)
-                self.add_table(cmd)
+
+                print("request_def", request_def)
+
+                self.add_table(cmd, request_def[2])
                 return
         logging.error("Illegal screen type %s", screentype)
 
@@ -420,11 +426,11 @@ class ObjectDetailScreenBase:
         cmd = request_def[1].format(COMMAND_NAME, otype, oname, nspace)
         return cmd
 
-    def add_table(self, cmd):
+    def add_table(self, cmd, is_editable):
         run_command = RunCommand(cmd, False)
         if run_command.exit_code == 0 and run_command.output != "":
             html_table = HtmlTable([cmd], run_command.output)
-            self.html += html_table.make_html(None, None)
+            self.html += html_table.make_html(None, None, is_editable)
         else:
             self.html += make_error_message(run_command)
 
@@ -459,10 +465,10 @@ class ObjectDetailScreenBase:
 class ObjectDetailScreen(ObjectDetailScreenBase):
     def __init__(self, screentype, otype, oname, namespace, namespaced):
 
-        request_types = [['describe', '{} describe {} {} {}'], \
-                              ['get-yaml', '{} get {} {} {} -o yaml'],\
-                              ['get-json', '{} get {} {} {} -o json'],\
-                              ['logs', '{} logs {}/{} {}']]
+        request_types = [['describe', '{} describe {} {} {}', False], \
+                              ['get-yaml', '{} get {} {} {} -o yaml', True],\
+                              ['get-json', '{} get {} {} {} -o json', True],\
+                              ['logs', '{} logs {}/{} {}', False]]
 
         super().__init__("objectinfo", screentype, otype, oname,\
                         namespace, namespaced, request_types)
@@ -471,9 +477,9 @@ class ObjectDetailScreen(ObjectDetailScreenBase):
 class CrdInfoScreen(ObjectDetailScreenBase):
     def __init__(self, screentype, otype, oname, namespace, namespaced):
 
-        request_types = [['get-yaml', '{} get {} {} {} -o yaml'],\
-                             ['get-json', '{} get {} {} {} -o json'],\
-                             ['crd-yaml', '{} describe customresourcedefinition {}']]
+        request_types = [['get-yaml', '{} get {} {} {} -o yaml', True],\
+                             ['get-json', '{} get {} {} {} -o json', True],\
+                             ['crd-yaml', '{} describe customresourcedefinition {}', False]]
 
         super().__init__("crdinfo", screentype, otype, oname, namespace, namespaced, request_types)
 
