@@ -2,11 +2,16 @@
 
 ## webapp with similar functionality as k9s
 
-Requires [bottle](https://bottlepy.org/docs/dev/), requires the presence of kubectl or oc.
+[k9s](https://github.com/derailed/k9s) is a character UI application for managing of kubernetes clusters.
+
+This one is a simple webapp with similar functionality. It parses the output of kubectl and presents it as a web interface.
+This application is written in python3.
+
+Requires [bottle](https://bottlepy.org/docs/dev/), requires the presence of kubectl.
 
 
 ```
-pip install bottle
+sudo pip3 install bottle
 ```
 
 by default it listens on localhost on port 8000
