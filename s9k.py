@@ -395,11 +395,11 @@ class ObjectListScreen:
     def make_object_link(self, line, title_pos):
         if self.object_type != 'customresourcedefinitions':
             if self.namespace_index != -1:
-                link = '<a href="/objectinfo/describe/{}/{}/{}/{}">{}</a>'.\
+                link = '<a href="/objectinfo/get-yaml/{}/{}/{}/{}">{}</a>'.\
                     format(self.object_type, line[self.name_index],\
                             line[self.namespace_index], self.namespaced, line[title_pos])
             else:
-                link = '<a href="/objectinfo/describe/{}/{}/None/{}">{}</a>'.\
+                link = '<a href="/objectinfo/get-yaml/{}/{}/None/{}">{}</a>'.\
                     format(self.object_type, line[self.name_index], \
                             self.namespaced, line[title_pos])
         else:
