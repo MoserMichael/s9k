@@ -53,20 +53,30 @@ def get_home_link():
     return "<a href='/'>Home</a>&nbsp;"
 
 class RunCommand:
-    def __init__(self, command_line, split_lines=True):
+    def __init__(self, command_line, split_lines=True, pipe_as_input=None):
         self.command_line = command_line
         self.lines = []
         self.exit_code = 0
-        self.run(command_line, split_lines)
+        self.run(command_line, split_lines, pipe_as_input)
 
-    def run(self, command_line, split_lines):
+    def run(self, command_line, split_lines, pipe_as_input):
 
         logging.info("command line: %s", command_line)
-        process = subprocess.Popen(shlex.split(command_line), \
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        (output, error_out) = process.communicate()
-        self.exit_code = process.wait()
+
+        if pipe_as_input is None:
+            process = subprocess.Popen(shlex.split(command_line), \
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            (output, error_out) = process.communicate()
+            self.exit_code = process.wait()
+        else:
+            process = subprocess.Popen(shlex.split(command_line), \
+                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+            (output, error_out) = process.communicate(input=pipe_as_input.encode("utf-8"))
+            self.exit_code = process.wait()
+
 
         if split_lines:
             self.lines = output.splitlines()
@@ -255,15 +265,15 @@ class HtmlTable:
     @staticmethod
     def make_edit_form(editlink):
         return '''<tr id ="editform" style="display: none"><td>\
-<form action="post" action="{}">\
-<input type="button" value="save"/><br/>\
+<form method="post" action="{}">\
+<input type="submit" value="save"/><br/>\
 <textarea name="edit" id="edit" rows="40", cols="80"></textarea>\
 </form></td></tr>'''.format(editlink)
 
 
     @staticmethod
     def make_script_switch_to_edit():
-         return '''<script>
+        return '''<script>
 function  startedit() {
     toedit = document.getElementById("toedit");
     displayform = document.getElementById("displayform");
@@ -459,7 +469,7 @@ class ObjectDetailScreenBase:
         run_command = RunCommand(cmd, False)
         if run_command.exit_code == 0 and run_command.output != "":
             html_table = HtmlTable([cmd], run_command.output)
-            self.html += html_table.make_html(None, None, is_editable, 'blabla')
+            self.html += html_table.make_html(None, None, is_editable, '/editobj')
         else:
             self.html += make_error_message(run_command)
 
@@ -515,6 +525,23 @@ class CrdInfoScreen(ObjectDetailScreenBase):
     def make_back_link(self, otype, _):
         return '<a href="/crds/list-objects/{}">crd {}</a>&nbsp;'.format(otype, otype)
 
+
+class EditObjectScreen:
+    def __init__(self, object_to_save):
+        self.message = ""
+        self.run(object_to_save)
+
+    def run(self, object_to_save):
+        cmd = "{} apply -f -".format(COMMAND_NAME)
+        run_command = RunCommand(cmd, True, pipe_as_input=object_to_save)
+        if run_command.exit_code == 0:
+            self.message = "Object saved successfully"
+        else:
+            self.message = make_error_message(run_command)
+
+    def make_html(self):
+        return '{}<br/><button onclick="window.history.back();">Go Back</button>'.format(self.message)
+
 api_resources_screen = ApiResources()
 
 app = bottle.Bottle()
@@ -548,6 +575,17 @@ def crdinfoscr(sccreentype, otype, oname, namespace):
 def crdinfoscr2(sccreentype, otype, oname, namespace):
     object_screen = CrdInfoScreen(sccreentype, otype, oname, namespace, "")
     return object_screen.make_html()
+
+
+@app.route('/editobj', method='POST')
+def edit_object_action():
+    object_to_save = bottle.request.forms.get("edit")
+    print("object to save", object_to_save)
+    object_screen = EditObjectScreen(object_to_save)
+    return object_screen.make_html()
+
+
+
 
 
 def parse_cmd_line():
