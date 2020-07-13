@@ -204,7 +204,7 @@ class HtmlTable:
         self.parsed_lines = parsed_lines
         self.html_text = ""
 
-    def make_html(self, column_subset, link_cb, is_editable):
+    def make_html(self, column_subset, link_cb, is_editable, editlink):
         if self.html_text != "":
             return self.html_text
         if link_cb is None:
@@ -214,6 +214,9 @@ class HtmlTable:
             ret = ERROR_MESSAGE_NO_DATA
         else:
             ret = get_style_sheet()
+
+            if is_editable:
+                ret += HtmlTable.make_script_switch_to_edit()
 
             ret += self.make_table_header(column_subset)
 
@@ -225,10 +228,12 @@ class HtmlTable:
                             ret += '<td>{}</td>'.format(link_cb(line, pos))
                     ret += '</tr>\n'
             else:
-                ret += '<tr><td>'
+                ret += '<tr id="displayform"><td>'
                 if is_editable:
-                    ret += '<input type="button" value = "edit"/><br/>'
-                ret += '<pre>{}</pre></td></tr>'.format(self.parsed_lines)
+                    ret += '<input type="button" onclick="startedit();" value = "edit"/><br/>'
+                ret += '<pre id="toedit">{}</pre></td></tr>'.format(self.parsed_lines)
+                if is_editable:
+                    ret += HtmlTable.make_edit_form(editlink)
             ret += '</table>'
 
         self.html_text = ret
@@ -247,6 +252,30 @@ class HtmlTable:
     def make_object_link_def(line, title_pos):
         return line[title_pos]
 
+    @staticmethod
+    def make_edit_form(editlink):
+        return '''<tr id ="editform" style="display: none"><td>\
+<form action="post" action="{}">\
+<input type="button" value="save"/><br/>\
+<textarea name="edit" id="edit" rows="40", cols="80"></textarea>\
+</form></td></tr>'''.format(editlink)
+
+
+    @staticmethod
+    def make_script_switch_to_edit():
+         return '''<script>
+function  startedit() {
+    toedit = document.getElementById("toedit");
+    displayform = document.getElementById("displayform");
+    editform = document.getElementById("editform");
+    edit = document.getElementById("edit");
+
+    displayform.style.display = 'none';
+    edit.value = toedit.innerHTML;
+    editform.style.display = '';
+}
+</script>
+'''
 
 class ApiResources:
     def __init__(self):
@@ -275,7 +304,7 @@ class ApiResources:
         html = '<b>{}</b></br>'.format(get_home_link())
 
         if self.html_table:
-            html += self.html_table.make_html(column_subset, self.make_object_link, False)
+            html += self.html_table.make_html(column_subset, self.make_object_link, False, "")
         else:
             html += self.error_message
 
@@ -323,7 +352,7 @@ class ObjectListScreen:
         ret += self.make_query_fields()
 
         if self.html_table is not None:
-            return ret + self.html_table.make_html(None, self.make_object_link, False)
+            return ret + self.html_table.make_html(None, self.make_object_link, False, '')
         return ret + self.error_message
 
     def get_self_link(self):
@@ -376,7 +405,7 @@ class CrdScreen:
             self.namespace_index = find_index_in_list(html_table.titles, "NAMESPACE")
             self.name_index = find_index_in_list(html_table.titles, "NAME")
 
-            return hdr + html_table.make_html(None, self.make_object_link, False)
+            return hdr + html_table.make_html(None, self.make_object_link, False, '')
         return hdr + make_error_message(run_command)
 
 
@@ -430,7 +459,7 @@ class ObjectDetailScreenBase:
         run_command = RunCommand(cmd, False)
         if run_command.exit_code == 0 and run_command.output != "":
             html_table = HtmlTable([cmd], run_command.output)
-            self.html += html_table.make_html(None, None, is_editable)
+            self.html += html_table.make_html(None, None, is_editable, 'blabla')
         else:
             self.html += make_error_message(run_command)
 
