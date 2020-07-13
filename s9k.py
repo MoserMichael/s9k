@@ -506,7 +506,7 @@ class ObjectDetailScreen(ObjectDetailScreenBase):
 
         request_types = [['describe', '{} describe {} {} {}', False], \
                               ['get-yaml', '{} get {} {} {} -o yaml', True],\
-                              ['get-json', '{} get {} {} {} -o json', True],\
+                              ['get-json', '{} get {} {} {} -o json', False],\
                               ['logs', '{} logs {}/{} {}', False]]
 
         super().__init__("objectinfo", screentype, otype, oname,\
@@ -517,7 +517,7 @@ class CrdInfoScreen(ObjectDetailScreenBase):
     def __init__(self, screentype, otype, oname, namespace, namespaced):
 
         request_types = [['get-yaml', '{} get {} {} {} -o yaml', True],\
-                             ['get-json', '{} get {} {} {} -o json', True],\
+                             ['get-json', '{} get {} {} {} -o json', False],\
                              ['crd-yaml', '{} describe customresourcedefinition {}', False]]
 
         super().__init__("crdinfo", screentype, otype, oname, namespace, namespaced, request_types)
