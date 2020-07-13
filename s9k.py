@@ -240,10 +240,12 @@ class HtmlTable:
             else:
                 ret += '<tr id="displayform"><td>'
                 if is_editable:
-                    ret += '<input type="button" onclick="startedit();" value = "edit"/><br/>'
+                    ret += '<input type="button" onclick="startedit();" value="edit"/> &nbsp; '
+                    ret += '<input type="button" onclick="deleteobj();" value="Delete"/>'
+                    ret += '<br/>'
                 ret += '<pre id="toedit">{}</pre></td></tr>'.format(self.parsed_lines)
                 if is_editable:
-                    ret += HtmlTable.make_edit_form(editlink)
+                    ret += HtmlTable.make_edit_row(editlink)
             ret += '</table>'
 
         self.html_text = ret
@@ -263,13 +265,23 @@ class HtmlTable:
         return line[title_pos]
 
     @staticmethod
-    def make_edit_form(editlink):
-        return '''<tr id ="editform" style="display: none"><td>\
-<form method="post" action="{}">\
-<input type="submit" value="save"/><br/>\
-<textarea name="edit" id="edit" rows="40", cols="80"></textarea>\
-</form></td></tr>'''.format(editlink)
+    def make_edit_row(editlink):
+        return '<tr id ="editform" style="display:none"><td>{} {}</td></tr>'.\
+                format(HtmlTable.make_edit_form(editlink), HtmlTable.make_delete_form(editlink))
 
+    @staticmethod
+    def make_edit_form(editlink):
+        return '''<form method="post" action="{}" >\
+<input type="submit" value="save"/><br/>\
+<textarea name="edit" id="contentOnEdit" rows="40", cols="80"></textarea>\
+</form>'''.format(editlink[0])
+
+
+    @staticmethod
+    def make_delete_form(editlink):
+        return '''<form id="deleteobj" method="post" action={} style="display:none">\
+<textarea name="edit" id="contentOnDelete" style="display:none"></textarea>\
+</form>'''.format(editlink[1])
 
     @staticmethod
     def make_script_switch_to_edit():
@@ -278,11 +290,22 @@ function  startedit() {
     toedit = document.getElementById("toedit");
     displayform = document.getElementById("displayform");
     editform = document.getElementById("editform");
-    edit = document.getElementById("edit");
+    editctl = document.getElementById("contentOnEdit");
 
     displayform.style.display = 'none';
-    edit.value = toedit.innerHTML;
+    editctl.value = toedit.innerHTML;
     editform.style.display = '';
+}
+
+function deleteobj() {
+    if (confirm("Do you really want to delete the object ?")) {
+        toedit = document.getElementById("toedit");
+        edit = document.getElementById("contentOnDelete");
+        edit.value = toedit.innerHTML;
+
+        form = document.getElementById("deleteobj");
+        form.submit();
+    }
 }
 </script>
 '''
@@ -449,9 +472,6 @@ class ObjectDetailScreenBase:
         for request_def in self.request_types:
             if screentype == request_def[0]:
                 cmd = ObjectDetailScreen.make_kubectl_cmd(request_def, namespace, otype, oname)
-
-                print("request_def", request_def)
-
                 self.add_table(cmd, request_def[2])
                 return
         logging.error("Illegal screen type %s", screentype)
@@ -469,7 +489,8 @@ class ObjectDetailScreenBase:
         run_command = RunCommand(cmd, False)
         if run_command.exit_code == 0 and run_command.output != "":
             html_table = HtmlTable([cmd], run_command.output)
-            self.html += html_table.make_html(None, None, is_editable, '/editobj')
+            self.html += html_table.make_html(None, None, is_editable, \
+                    ['/editobj/apply', '/editobj/delete'])
         else:
             self.html += make_error_message(run_command)
 
@@ -527,20 +548,24 @@ class CrdInfoScreen(ObjectDetailScreenBase):
 
 
 class EditObjectScreen:
-    def __init__(self, object_to_save):
+    def __init__(self, action, object_to_save):
         self.message = ""
-        self.run(object_to_save)
+        self.run(action, object_to_save)
+        self.success_msg = {'save' : "Object saved successfully",
+                            'delete': "Object deleted successfully"}
 
-    def run(self, object_to_save):
-        cmd = "{} apply -f -".format(COMMAND_NAME)
+    def run(self, action, object_to_save):
+        cmd = "{} {} -f -".format(COMMAND_NAME, action)
+        print("cmd:", cmd)
         run_command = RunCommand(cmd, True, pipe_as_input=object_to_save)
         if run_command.exit_code == 0:
-            self.message = "Object saved successfully"
+            self.message = self.success_msg[action]
         else:
             self.message = make_error_message(run_command)
 
     def make_html(self):
-        return '{}<br/><button onclick="window.history.back();">Go Back</button>'.format(self.message)
+        return '{}<br/><button onclick="window.history.back();">Go Back</button>'\
+                .format(self.message)
 
 api_resources_screen = ApiResources()
 
@@ -577,11 +602,10 @@ def crdinfoscr2(sccreentype, otype, oname, namespace):
     return object_screen.make_html()
 
 
-@app.route('/editobj', method='POST')
-def edit_object_action():
+@app.route('/editobj/<action>', method='POST')
+def edit_object_action(action):
     object_to_save = bottle.request.forms.get("edit")
-    print("object to save", object_to_save)
-    object_screen = EditObjectScreen(object_to_save)
+    object_screen = EditObjectScreen(action, object_to_save)
     return object_screen.make_html()
 
 
