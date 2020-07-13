@@ -550,7 +550,8 @@ class CrdInfoScreen(ObjectDetailScreenBase):
 class EditObjectScreen:
     def __init__(self, action, object_to_save):
         self.message = ""
-        self.success_msg = {'apply' : "Object saved successfully", 'delete': "Object deleted successfully"}
+        self.success_msg = {'apply' : "Object saved successfully", \
+                            'delete': "Object deleted successfully"}
         self.run(action, object_to_save)
 
     def run(self, action, object_to_save):
@@ -575,6 +576,7 @@ def mainscr():
 
 @app.route('/objectinstances/<oname>/<namespaced>', method=['GET', 'POST'])
 def objectlinkscr(oname, namespaced):
+    bottle.response.set_header('Cache-Control', 'no-store')
     field_sel = bottle.request.forms.get("fieldsel")
     label_sel = bottle.request.forms.get("labelsel")
     object_screen = ObjectListScreen(oname, namespaced, field_sel, label_sel)
@@ -582,27 +584,32 @@ def objectlinkscr(oname, namespaced):
 
 @app.route('/objectinfo/<screentype>/<otype>/<instancename>/<namespace>/<isnamespaced>')
 def objectinfoscr(otype, screentype, instancename, namespace, isnamespaced):
+    bottle.response.set_header('Cache-Control', 'no-store')
     object_screen = ObjectDetailScreen(screentype, otype, instancename, namespace, isnamespaced)
     return object_screen.make_html()
 
 @app.route('/crds/<screentype>/<oname>')
 def crdscr(screentype, oname):
+    bottle.response.set_header('Cache-Control', 'no-store')
     object_screen = CrdScreen(screentype, oname, None)
     return object_screen.make_html()
 
 @app.route('/crdinfo/<sccreentype>/<otype>/<oname>/<namespace>')
 def crdinfoscr(sccreentype, otype, oname, namespace):
+    bottle.response.set_header('Cache-Control', 'no-store')
     object_screen = CrdInfoScreen(sccreentype, otype, oname, namespace, "")
     return object_screen.make_html()
 
 @app.route('/crdinfo/<sccreentype>/<otype>/<oname>/<namespace>/')
 def crdinfoscr2(sccreentype, otype, oname, namespace):
+    bottle.response.set_header('Cache-Control', 'no-store')
     object_screen = CrdInfoScreen(sccreentype, otype, oname, namespace, "")
     return object_screen.make_html()
 
 
 @app.route('/editobj/<action>', method='POST')
 def edit_object_action(action):
+    bottle.response.set_header('Cache-Control', 'no-store')
     object_to_save = bottle.request.forms.get("edit")
     object_screen = EditObjectScreen(action, object_to_save)
     return object_screen.make_html()
