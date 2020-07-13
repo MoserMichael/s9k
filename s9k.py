@@ -550,16 +550,15 @@ class CrdInfoScreen(ObjectDetailScreenBase):
 class EditObjectScreen:
     def __init__(self, action, object_to_save):
         self.message = ""
+        self.success_msg = {'apply' : "Object saved successfully", 'delete': "Object deleted successfully"}
         self.run(action, object_to_save)
-        self.success_msg = {'save' : "Object saved successfully",
-                            'delete': "Object deleted successfully"}
 
     def run(self, action, object_to_save):
         cmd = "{} {} -f -".format(COMMAND_NAME, action)
         print("cmd:", cmd)
         run_command = RunCommand(cmd, True, pipe_as_input=object_to_save)
         if run_command.exit_code == 0:
-            self.message = self.success_msg[action]
+            self.message = self.success_msg.get(action)
         else:
             self.message = make_error_message(run_command)
 
