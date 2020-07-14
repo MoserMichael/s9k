@@ -3,11 +3,19 @@ import subprocess
 import logging
 import shlex
 import argparse
+import ssl
+from cheroot import wsgi
+from cheroot.ssl.builtin import BuiltinSSLAdapter
+from beaker.middleware import SessionMiddleware
 import bottle
 
 ERROR_MESSAGE_NO_DATA = "The server failed to get the requested command."
-COMMAND_NAME = "kubectl"
 
+
+class Params:
+    COMMAND_NAME = "kubectl"
+    CERT_FILE="cert.pem"
+    KEY_FILE="key.pem"
 
 def get_style_sheet():
     return '''<style>
@@ -164,9 +172,9 @@ class ClientGoCmd:
 
     def process(self, entity, is_namespaced, column_defs):
         if is_namespaced:
-            command_text = "{} get {} -A".format(COMMAND_NAME, entity)
+            command_text = "{} get {} -A".format(Params.COMMAND_NAME, entity)
         else:
-            command_text = "{} get {}".format(COMMAND_NAME, entity)
+            command_text = "{} get {}".format(Params.COMMAND_NAME, entity)
 
 
         if column_defs is not None:
@@ -313,7 +321,7 @@ function deleteobj() {
 class ApiResources:
     def __init__(self):
 
-        cmd = COMMAND_NAME + " api-resources"
+        cmd = Params.COMMAND_NAME + " api-resources"
         run_command = RunCommand(cmd)
 
         #for whatever reasons kubectl api-resources often returns error status,
@@ -365,7 +373,8 @@ class ObjectListScreen:
         if label_sel:
             add += "--selector {}".format(label_sel)
 
-        cmd = "{} get {} -o wide {} --show-labels {}".format(COMMAND_NAME, oname, cli_param, add)
+        cmd = "{} get {} -o wide {} --show-labels {}".format(\
+                Params.COMMAND_NAME, oname, cli_param, add)
         run_command = RunCommand(cmd)
 
         if run_command.exit_code == 0 and len(run_command.lines) != 0:
@@ -428,7 +437,7 @@ class CrdScreen:
 
     def make_html(self):
         hdr = CrdScreen.make_hdr_links()
-        cmd = '{} get -A {}'.format(COMMAND_NAME, self.oname)
+        cmd = '{} get -A {}'.format(Params.COMMAND_NAME, self.oname)
         run_command = RunCommand(cmd)
 
         if run_command.exit_code == 0 and len(run_command.lines) != 0:
@@ -482,7 +491,7 @@ class ObjectDetailScreenBase:
         nspace = ""
         if namespace != 'None':
             nspace = '-n {}'.format(namespace)
-        cmd = request_def[1].format(COMMAND_NAME, otype, oname, nspace)
+        cmd = request_def[1].format(Params.COMMAND_NAME, otype, oname, nspace)
         return cmd
 
     def add_table(self, cmd, is_editable):
@@ -544,7 +553,7 @@ class CrdInfoScreen(ObjectDetailScreenBase):
         super().__init__("crdinfo", screentype, otype, oname, namespace, namespaced, request_types)
 
     def make_back_link(self, otype, _):
-        return '<a href="/crds/list-objects/{}">crd {}</a>&nbsp;'.format(otype, otype)
+        return '<a href="/crds/list-objects/{0}">crd {0}</a>&nbsp;'.format(otype)
 
 
 class EditObjectScreen:
@@ -555,7 +564,7 @@ class EditObjectScreen:
         self.run(action, object_to_save)
 
     def run(self, action, object_to_save):
-        cmd = "{} {} -f -".format(COMMAND_NAME, action)
+        cmd = "{} {} -f -".format(Params.COMMAND_NAME, action)
         print("cmd:", cmd)
         run_command = RunCommand(cmd, True, pipe_as_input=object_to_save)
         if run_command.exit_code == 0:
@@ -566,6 +575,28 @@ class EditObjectScreen:
     def make_html(self):
         return '{}<br/><button onclick="window.history.back();">Go Back</button>'\
                 .format(self.message)
+
+
+# Create our own sub-class of Bottle's ServerAdapter
+# so that we can specify SSL. Using just server='cherrypy'
+# uses the default cherrypy server, which doesn't use SSL
+class SSLCherryPyServer(bottle.ServerAdapter):
+
+    def run(self, handler):
+        server = wsgi.Server((self.host, self.port), handler)
+        server.ssl_adapter = BuiltinSSLAdapter(Params.CERT_FILE, Params.KEY_FILE)
+
+        # By default, the server will allow negotiations with extremely old protocols
+        # that are susceptible to attacks, so we only allow TLSv1.2
+        server.ssl_adapter.context.options |= ssl.OP_NO_TLSv1
+        server.ssl_adapter.context.options |= ssl.OP_NO_TLSv1_1
+
+        try:
+            server.start()
+        finally:
+            server.stop()
+
+
 
 api_resources_screen = ApiResources()
 
@@ -630,7 +661,13 @@ def parse_cmd_line():
             help='listening port')
 
     parse.add_argument('--host', '-i', type=str, dest='host', default='localhost',\
-            help='Input file name')
+            help='listening on host')
+
+    parse.add_argument('--cert', '-r', type=str, dest='cert', default='',\
+            help='TLS certifificate file')
+
+    parse.add_argument('--key', '-k', type=str, dest='key', default='',\
+            help='TLS private key file')
 
     return parse.parse_args()
 
@@ -644,15 +681,40 @@ def set_info_logger():
     root.addHandler(console_handler)
 
 def main():
-    global COMMAND_NAME
 
     cmd = parse_cmd_line()
 
-    logging.info("host: %s port: %s command: %s", cmd.host, cmd.port, cmd.kubectl)
+    logging.info("host: %s port: %s command: %s certfile: %s keyfile: %s",\
+                cmd.host, cmd.port, cmd.kubectl, cmd.cert, cmd.key)
 
-    COMMAND_NAME = cmd.kubectl
+    Params.COMMAND_NAME = cmd.kubectl
 
-    bottle.run(app, host=cmd.host, port=cmd.port)
+    if cmd.cert == "" and cmd.key == "":
+        bottle.run(app, host=cmd.host, port=cmd.port)
+    else:
+
+        Params.CERT_FILE = cmd.cert
+        Params.KEY_FILE = cmd.key
+
+        session_opts = {
+            "session.type": "file",
+            "session.cookie_expires": True,
+            "session.data_dir": "./data",
+            "session.auto": True,
+        }
+        # Create the default bottle app and then wrap it around
+        # a beaker middleware and send it back to bottle to run
+        mapp = SessionMiddleware(app, session_opts)
+
+        bottle.run(app=mapp, host=cmd.host, port=cmd.port, server=SSLCherryPyServer)
+
+#        options = {\
+#                "certfile": cmd.cert,\
+#                "keyfile": cmd.key\
+#        }
+#        bottle.run(app, host=cmd.host, port=cmd.port, options=options)
+
 
 if __name__ == '__main__':
+
     main()
