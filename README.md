@@ -8,6 +8,7 @@ This script [s9k] is a simple web server that serves a webapp with similar funct
 This application is written in python3 and requires the [bottle library](https://bottlepy.org/docs/dev/), It also requires the presence of kubectl.
 
 
+### Installing the requirements
 ```
 sudo pip3 install bottle
 
@@ -18,6 +19,8 @@ sudo pip3 install cherrypy
 sudo pip3 install beaker
 
 ```
+
+### Running the script
 
 by default it listens on localhost on port 8000
 
