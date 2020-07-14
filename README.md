@@ -4,7 +4,7 @@
 
 [k9s](https://github.com/derailed/k9s) is a character UI application for managing kubernetes clusters.
 
-This script is a simple web server that serves a webapp with similar functionality as k9s. It works by parsing the output of kubectl.
+This script [s9k] is a simple web server that serves a webapp with similar functionality as k9s. It works by parsing the output of kubectl.
 This application is written in python3 and requires the [bottle library](https://bottlepy.org/docs/dev/), It also requires the presence of kubectl.
 
 
