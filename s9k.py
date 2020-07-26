@@ -11,51 +11,18 @@ import bottle
 
 ERROR_MESSAGE_NO_DATA = "The server failed to get the requested command."
 
+def read_static_file(file_name):
+    with open("./static-files/{}".format(file_name), "r") as file:
+        return file.read()
+    return "404"
+
+def get_style_sheet():
+    return read_static_file("css.css")
 
 class Params:
     COMMAND_NAME = "kubectl"
-    CERT_FILE="cert.pem"
-    KEY_FILE="key.pem"
-
-def get_style_sheet():
-    return '''<style>
-table {
-  width: 100%;
-  background-color: #FFFFFF;
-  border-collapse: collapse;
-  border-width: 2px;
-  border-color: #7ea8f8;
-  border-style: solid;
-  color: #000000;
-}
-
-table td, table th {
-  border-width: 2px;
-  border-color: #7ea8f8;
-  border-style: solid;
-  padding: 5px;
-}
-
-table thead {
-  background-color: #7ea8f8;
-}
-a:link {
-  text-decoration: none;
-}
-
-a:visited {
-  text-decoration: none;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-a:active {
-  text-decoration: underline;
-}
-</style>
-'''
+    CERT_FILE = "cert.pem"
+    KEY_FILE = "key.pem"
 
 def get_home_link():
     return "<a href='/'>Home</a>&nbsp;"
@@ -576,7 +543,6 @@ class EditObjectScreen:
         return '{}<br/><button onclick="window.history.back();">Go Back</button>'\
                 .format(self.message)
 
-
 # Create our own sub-class of Bottle's ServerAdapter
 # so that we can specify SSL. Using just server='cherrypy'
 # uses the default cherrypy server, which doesn't use SSL
@@ -646,6 +612,9 @@ def edit_object_action(action):
     return object_screen.make_html()
 
 
+@app.route('/static-file/<file-name>')
+def get_static_file(file_name):
+    return read_static_file(file_name)
 
 
 
