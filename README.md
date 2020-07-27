@@ -18,6 +18,8 @@ sudo pip3 install cherrypy
 # for tls support
 sudo pip3 install beaker
 
+# for websocket support
+sudo pip3 install  bottle-websocket
 ```
 
 ### Running the script

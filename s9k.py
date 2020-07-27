@@ -8,14 +8,17 @@ from cheroot import wsgi
 from cheroot.ssl.builtin import BuiltinSSLAdapter
 from beaker.middleware import SessionMiddleware
 import bottle
+from bottle import get
+from bottle.ext.websocket import GeventWebSocketServer
+from bottle.ext.websocket import websocket
 
 ERROR_MESSAGE_NO_DATA = "The server failed to get the requested command."
 
 def read_static_file(file_name):
-    file_name = "./static-file/{}".format(file_name) 
+    file_name = "./static-file/{}".format(file_name)
     with open(file_name, "r") as file:
         return file.read()
-    
+
     print("!! 404 {}".format(file_name))
     return "404"
 
@@ -446,8 +449,8 @@ class ObjectDetailScreenBase:
         self.oname = oname
         self.namespaced = namespaced
 
-        self.html_header = self.make_hdr_links(screentype, otype, oname, namespace, namespaced) 
-        self.html = self.html_header 
+        self.html_header = self.make_hdr_links(screentype, otype, oname, namespace, namespaced)
+        self.html = self.html_header
 
         for request_def in self.request_types:
             if screentype == request_def[0]:
@@ -587,9 +590,12 @@ class TerminalAttachScreen(ObjectDetailScreen):
 #        first_container = self.container_names[0]
 
         ret = self.html_header
-        ret += read_static_file('attach-container.html')
+        template = read_static_file('xterm/index.html')
 
-        return ret
+        uri = "/wssh/{}/{}/{}".format(self.isnamespaced, self.podname, self.namespace)
+
+        html = template.format(uri)
+        return ret + html
 
 
 
@@ -671,6 +677,18 @@ def shell_attach(isnamespaced, podname, namespace):
     terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace)
     return terminal_attach.make_html()
 
+#@app.route('/socket.io/<fname:path>', apply=[websocket], method="GET")
+@app.get('/wssh', apply=[websocket], method="GET")
+def echo(ws):
+    while True:
+        msg = ws.receive()
+        if msg is not None:
+            print("got msg {}".format(msg))
+            ws.send(msg)
+        else:
+            break
+    print("service websocket connection finished")
+
 
 def parse_cmd_line():
     usage = '''Web application that parses kubectl output in a nice manner.
@@ -703,6 +721,8 @@ def set_info_logger():
     console_handler = logging.StreamHandler()
     root.addHandler(console_handler)
 
+
+
 def main():
 
     cmd = parse_cmd_line()
@@ -713,7 +733,7 @@ def main():
     Params.COMMAND_NAME = cmd.kubectl
 
     if cmd.cert == "" and cmd.key == "":
-        bottle.run(app, host=cmd.host, port=cmd.port)
+        bottle.run(app, host=cmd.host, port=cmd.port, server=GeventWebSocketServer)
     else:
 
         Params.CERT_FILE = cmd.cert

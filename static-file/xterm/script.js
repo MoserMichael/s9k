@@ -81,6 +81,7 @@ function openTerminal() {
             // Erase our connecting message
             // term.write('\x1b[2K\r');
             client.resize(term.cols, term.rows);
+            this.send( websocket_uri  );
         },
         onClose: function() {
             term.write('\r\nConnection closed by peer');
