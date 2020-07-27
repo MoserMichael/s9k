@@ -1,0 +1,106 @@
+<!doctype html>
+  <html>
+    <head>
+      <link rel="stylesheet" href="/static-file/node_modules/xterm/dist/xterm.css" />
+      <script src="/static-file/node_modules/jquery/dist/jquery.min.js"></script>
+      <script src="/static-file/node_modules/socket.io-client/dist/socket.io.js"></script>
+      <script src="/static-file/node_modules/xterm/dist/xterm.js"></script>
+      <script src="/static-file/node_modules/xterm/dist/addons/fit/fit.js"></script>
+      <script src="/static-file/node_modules/xterm/dist/addons/webLinks/webLinks.js"></script>
+    </head>
+    <body>
+      <div id="terminal"></div>
+      <script>
+$(function() {
+    Terminal.applyAddon(fit);
+    Terminal.applyAddon(webLinks);
+
+    var term = new Terminal({
+        macOptionIsMeta: true,
+        cursorBlink: true
+    });
+    term.open(document.getElementById('terminal'));
+    term.write("Hello from \033[1;3;31mxterm.js\033[0m $ ")
+    term.writeln('Welcome to xterm.js');
+    term.writeln('Connecting to the kubernetes pod...');
+    term.writeln('');
+
+    term.fit();
+    term.webLinksInit();
+    term.focus();
+
+    var handleTermOutput = function(data) {
+        let str;
+        if (typeof data === 'object') {
+            if (data instanceof ArrayBuffer) {
+                if (!myTextDecoder) {
+                    myTextDecoder = new TextDecoder();
+                }
+
+                str = myTextDecoder.decode(data);
+            } else {
+                throw 'TODO: handle Blob?';
+            }
+        }
+        term.write(str || data);
+    };
+
+    var socket = io();
+
+    var handleInput = function(data) {
+        console.info("term:stdin", data);
+        socket.emit("term:stdin", data);
+    };
+
+    var handleResize = function(size) {
+        console.info("resize", size);
+        socket.emit("term:resize", JSON.stringify(size));
+    };
+
+    var attach = function() {
+        console.info("container tty connected.");
+        term.writeln("container tty connected.");
+        socket.on('term:stdout', handleTermOutput);
+        socket.on('term:stderr', handleTermOutput);
+        socket.on('term:terminated', detach);
+        term.on("data", handleInput);
+        term.on('resize', handleResize);
+    };
+
+    var detach = function() {
+        socket.off('term:connected', attach);
+        socket.off('term:stdout', handleTermOutput);
+        socket.off('term:stderr', handleTermOutput);
+        socket.off('term:terminated', detach);
+        term.off('data', handleInput)
+        term.off('resize', handleResize);
+    };
+
+    socket.on('error', function(data) {
+        console.error(data);
+    });
+
+    socket.on('connect', function() {
+        console.info("connecting web socket");
+        socket.on('term:connected', attach);
+        socket.emit("term:connect", JSON.stringify({
+            "namespace": "default",
+            "pod": "mongo-0",
+            "container": "mongo"
+        }))
+    });
+
+    socket.on('disconnect', detach);
+
+
+    var handleWindowResize = function() {
+        term.fit();
+    };
+    $(window).resize(handleWindowResize);
+});
+
+
+      </script>
+    </body>
+</html>
+

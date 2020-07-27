@@ -1,0 +1,17 @@
+{
+  "name": "s9k",
+  "description": "dependency for web client to attach to pod terminal",
+  "author": "Michael Moser",
+  "version": "1.0.0",
+  "license": "MIT",
+  "devDependencies": {
+    "bower": "*"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "font-awesome": "*",
+    "jquery": "^3.3.1",
+    "socket.io-client": "^2.0.4",
+    "xterm": "^3.2.0"
+  }
+}

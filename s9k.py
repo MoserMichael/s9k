@@ -12,8 +12,11 @@ import bottle
 ERROR_MESSAGE_NO_DATA = "The server failed to get the requested command."
 
 def read_static_file(file_name):
-    with open("./static-files/{}".format(file_name), "r") as file:
+    file_name = "./static-file/{}".format(file_name) 
+    with open(file_name, "r") as file:
         return file.read()
+    
+    print("!! 404 {}".format(file_name))
     return "404"
 
 def get_style_sheet():
@@ -547,6 +550,42 @@ class EditObjectScreen:
         return '{}<br/><button onclick="window.history.back();">Go Back</button>'\
                 .format(self.message)
 
+
+class TerminalAttachScreen:
+    def __init__(self, isnamespaced, podname, namespace):
+
+        self.isnamespaced = isnamespaced
+        self.podname = podname
+        self.namespace = namespace
+
+        self.container_names = self.list_containers()
+
+
+    def list_containers(self):
+        namespace_opt = ""
+        if self.isnamespaced:
+            namespace_opt = '-n {}'.format(self.namespace)
+
+        list_cmd = "{} get pods {} {} -o jsonpath='{}'".\
+                format(Params.COMMAND_NAME, namespace_opt, self.podname, \
+                    '{.spec.containers[*].name}')
+        command = RunCommand(list_cmd, False)
+
+        if command.exit_code != 0:
+            return []
+
+        print("list_cmd: {} out: {}".format(list_cmd, command.output)) #exit_code)) # == 0command.output)
+        return command.output.split()
+
+    def make_html(self):
+#        if len(self.container_names) == 0:
+#            return "??? no containers in pod ???"
+#
+#        first_container = self.container_names[0]
+        return read_static_file('attach-container.html')
+
+
+
 # Create our own sub-class of Bottle's ServerAdapter
 # so that we can specify SSL. Using just server='cherrypy'
 # uses the default cherrypy server, which doesn't use SSL
@@ -616,10 +655,14 @@ def edit_object_action(action):
     return object_screen.make_html()
 
 
-@app.route('/static-file/<file-name>')
-def get_static_file(file_name):
-    return read_static_file(file_name)
+@app.route('/static-file/<fname:path>')
+def get_static_file(fname):
+    return read_static_file(fname)
 
+@app.route('/shell-attach/<isnamespaced>/<podname>/<namespace>')
+def shell_attach(isnamespaced, podname, namespace):
+    terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace)
+    return terminal_attach.make_html()
 
 
 def parse_cmd_line():
