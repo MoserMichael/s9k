@@ -446,7 +446,8 @@ class ObjectDetailScreenBase:
         self.oname = oname
         self.namespaced = namespaced
 
-        self.html = self.make_hdr_links(screentype, otype, oname, namespace, namespaced)
+        self.html_header = self.make_hdr_links(screentype, otype, oname, namespace, namespaced) 
+        self.html = self.html_header 
 
         for request_def in self.request_types:
             if screentype == request_def[0]:
@@ -551,7 +552,7 @@ class EditObjectScreen:
                 .format(self.message)
 
 
-class TerminalAttachScreen:
+class TerminalAttachScreen(ObjectDetailScreen):
     def __init__(self, isnamespaced, podname, namespace):
 
         self.isnamespaced = isnamespaced
@@ -560,6 +561,8 @@ class TerminalAttachScreen:
 
         self.container_names = self.list_containers()
 
+        super().__init__("terminal-attach", "pods", podname, namespace, isnamespaced)
+        super
 
     def list_containers(self):
         namespace_opt = ""
@@ -582,7 +585,11 @@ class TerminalAttachScreen:
 #            return "??? no containers in pod ???"
 #
 #        first_container = self.container_names[0]
-        return read_static_file('attach-container.html')
+
+        ret = self.html_header
+        ret += read_static_file('attach-container.html')
+
+        return ret
 
 
 
