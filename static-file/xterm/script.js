@@ -80,8 +80,8 @@ function openTerminal() {
         onConnect: function() {
             // Erase our connecting message
             // term.write('\x1b[2K\r');
+            this.ws.send( JSON.stringify({'connect_param': websocket_uri}));
             client.resize(term.cols, term.rows);
-            this.send( websocket_uri  );
         },
         onClose: function() {
             term.write('\r\nConnection closed by peer');
