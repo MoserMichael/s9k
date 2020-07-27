@@ -491,6 +491,10 @@ class ObjectDetailScreenBase:
             if request_def[0] == screen_type:
                 ret += '</b>'
             ret += '&nbsp;'
+
+        if otype == "pods":
+            ret += '<a href="/shell-attach/{}/{}/{}">terminal-attach</a>'.\
+                    format(isnamespaced, oname, namespace)
         return ret
 
     def make_back_link(self, otype, isnamespaced):
