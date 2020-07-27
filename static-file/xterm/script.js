@@ -80,7 +80,7 @@ function openTerminal() {
         onConnect: function() {
             // Erase our connecting message
             // term.write('\x1b[2K\r');
-            this.ws.send( JSON.stringify({'connect_param': websocket_uri}));
+            this.ws.send( JSON.stringify({'pod_name': pod_name, 'pod_namespace': pod_namespace}));
             client.resize(term.cols, term.rows);
         },
         onClose: function() {

@@ -592,9 +592,7 @@ class TerminalAttachScreen(ObjectDetailScreen):
         ret = self.html_header
         template = read_static_file('xterm/index.html')
 
-        uri = "/wssh/{}/{}/{}".format(self.isnamespaced, self.podname, self.namespace)
-
-        html = template.format(uri)
+        html = template.format(self.podname, self.namespace)
         return ret + html
 
 
