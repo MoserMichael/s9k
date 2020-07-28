@@ -4,6 +4,12 @@ import logging
 import shlex
 import argparse
 import ssl
+import json
+import select
+import fcntl
+import os
+import threading
+
 from cheroot import wsgi
 from cheroot.ssl.builtin import BuiltinSSLAdapter
 from beaker.middleware import SessionMiddleware
@@ -11,6 +17,7 @@ import bottle
 from bottle import get
 from bottle.ext.websocket import GeventWebSocketServer
 from bottle.ext.websocket import websocket
+from geventwebsocket import WebSocketError
 
 ERROR_MESSAGE_NO_DATA = "The server failed to get the requested command."
 
@@ -580,19 +587,19 @@ class TerminalAttachScreen(ObjectDetailScreen):
         if command.exit_code != 0:
             return []
 
-        print("list_cmd: {} out: {}".format(list_cmd, command.output)) #exit_code)) # == 0command.output)
+        print("list_cmd: {} out: {}".format(list_cmd, command.output))
         return command.output.split()
 
     def make_html(self):
-#        if len(self.container_names) == 0:
-#            return "??? no containers in pod ???"
-#
-#        first_container = self.container_names[0]
+        if len(self.container_names) == 0:
+            return "??? no containers in pod ???"
+
+        first_container = self.container_names[0]
 
         ret = self.html_header
         template = read_static_file('xterm/index.html')
 
-        html = template.format(self.podname, self.namespace)
+        html = template.format(self.podname, self.namespace, first_container)
         return ret + html
 
 
@@ -603,7 +610,7 @@ class TerminalAttachScreen(ObjectDetailScreen):
 class SSLCherryPyServer(bottle.ServerAdapter):
 
     def run(self, handler):
-        server = wsgi.Server((self.host, self.port), handler)
+        server = wsgi.Server((self.host, self.port), handler = WebSocketHandler)
         server.ssl_adapter = BuiltinSSLAdapter(Params.CERT_FILE, Params.KEY_FILE)
 
         # By default, the server will allow negotiations with extremely old protocols
@@ -675,18 +682,153 @@ def shell_attach(isnamespaced, podname, namespace):
     terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace)
     return terminal_attach.make_html()
 
+#
+#def thread_read_net(process, web_socket):
+#
+#    while True:
+#        msg = web_socket.receive()
+#        if msg is None:
+#            break
+#        print("msg-net {}".format(msg))
+#        process.stdin.write(msg.encode('utf-8'))
+#    print("socket closed")
+#    web_socket.close()
+#    process.stdin.close()
+#    process.stdout.close()
+#
+#
+#
+#def thread_read_proc(process, web_socket):
+#    while True:
+#        msg_in = process.stdout.read()
+#        if msg_in is None:
+#            break
+#        web_socket.send(msg_in)
+#    print("process closed")
+#    web_socket.close()
+#    process.stdin.close()
+#    process.stdout.close()
+#
+#    net_thread = threading.Thread(target=thread_read_net, args=(process, web_socket))
+#    net_thread.start()
+#    proc_thread = threading.Thread(target=thread_read_proc, args=(process, web_socket))
+#    proc_thread.start()
+#
+#    net_thread.join()
+#    proc_thread.join()
+#
+
+
+
 #@app.route('/socket.io/<fname:path>', apply=[websocket], method="GET")
 @app.get('/wssh', apply=[websocket], method="GET")
-def echo(ws):
-    while True:
-        msg = ws.receive()
-        if msg is not None:
-            print("got msg {}".format(msg))
-            ws.send(msg)
-        else:
-            break
-    print("service websocket connection finished")
+def echo(web_socket):
 
+    cmd = "./kubeexec"
+    process = subprocess.Popen([cmd], \
+                        stdout=subprocess.PIPE, stdin=subprocess.PIPE) #, stderr=subprocess.PIPE)
+
+    stream = web_socket.stream.handler.rfile
+    fd_stream = stream.fileno()
+
+    fd_out = process.stdout.fileno()
+    
+    #print("fd_out {} fd-stream {} fd_stream-in {}".format(fd_out, fd_stream, process.stdin.fileno()))
+
+    loop_select = True
+    while loop_select:
+        #print("before select")
+        read_sock, _, error_socks =  select.select([fd_stream, fd_out], [], [fd_stream, fd_out])
+        #print("after select")
+
+        if len(read_sock) != 0:
+            #print("read_socks {}".format(len(read_sock)))
+            for sock in read_sock:
+                if sock == fd_out:
+                    #print("read from stdout")
+                    msg = process.stdout.readline()
+                    smsg = msg.decode('utf-8')
+                    #print("msg-from-kubectl {}".format(smsg))
+                    web_socket.send(smsg)
+
+                elif sock == fd_stream:
+                    #print("read from sock")
+                    try:
+                        msg = web_socket.receive()
+                        if msg is None:
+                            loop_select = False
+                            break
+                        #print("msg-net {}".format(msg))
+                        msg += '\n'
+                        process.stdin.write(msg.encode('utf-8'))
+                        process.stdin.flush()
+                    except WebSocketError:
+                        loop_select = False
+                        break
+        if len(error_socks) != 0:
+            print("error:")
+            break
+    
+    process.stdin.close()
+    process.stdout.close()
+
+
+#    poller = select.poll()
+#
+#    fd = process.stdout.fileno()
+##    flag = fcntl.fcntl(fd, fcntl.F_GETFL)
+##    fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
+#    poller.register(fd, select.POLLIN|select.POLLERR|select.POLLHUP)
+#
+#    fd = process.stderr.fileno()
+##    flag = fcntl.fcntl(fd, fcntl.F_GETFL)
+##    fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
+#    poller.register(fd, select.POLLIN|select.POLLERR|select.POLLHUP)
+#
+#    stream = web_socket.stream.handler.rfile
+#
+#    fd = stream.fileno()
+##    flag = fcntl.fcntl(fd, fcntl.F_GETFL)
+##    fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
+#    poller.register(fd, select.POLLIN|select.POLLERR|select.POLLHUP)
+#
+#    print("stdout {} websock {}".\
+#            format(process.stdout.fileno(), stream.fileno()))
+#
+#    do_loop = True
+#
+#    while do_loop:
+#        fd_events = poller.poll(1000)
+#
+#        print("num_events {}".format(len(fd_events)))
+#        for descriptor, event in fd_events:
+#            msg = ""
+#
+#            print("descriptor {} event {} ".format(descriptor, event))
+#            if event != select.POLLIN:
+#                do_loop = False
+#                break
+#
+#            if descriptor == process.stdout.fileno():
+#                msg = process.stdout.readline()
+#                print("msg-from-kubectl {}".format(msg))
+#                web_socket.send(msg)
+#            elif descriptor == process.stderr.fileno():
+#                msg = process.stderr.readline()
+#                print("debug-from-kubectl {}".format(msg))
+#            elif descriptor == stream.fileno():
+#                msg = web_socket.receive()
+#                print("msg-net {}".format(msg))
+#                process.stdin.write(msg.encode('utf-8'))
+#                process.stdin.flush()
+#            else:
+#                print("nothing of the sort")
+#                next
+#
+#
+#
+#    print("service websocket connection finished")
+#
 
 def parse_cmd_line():
     usage = '''Web application that parses kubectl output in a nice manner.

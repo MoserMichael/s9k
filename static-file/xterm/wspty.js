@@ -30,5 +30,5 @@ WsptyClient.prototype.send = function(data) {
 };
 
 WsptyClient.prototype.resize = function(cols, rows) {
-    this._connection.send(JSON.stringify({'resize': { width: cols, height: rows }}));
+    this._connection.send(JSON.stringify({cols: cols, rows: rows }));
 };

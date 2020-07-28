@@ -80,7 +80,7 @@ function openTerminal() {
         onConnect: function() {
             // Erase our connecting message
             // term.write('\x1b[2K\r');
-            this.ws.send( JSON.stringify({'pod_name': pod_name, 'pod_namespace': pod_namespace}));
+            this.ws.send( JSON.stringify({'pod_name': pod_name, 'pod_namespace': pod_namespace, 'container_name': container_name}));
             client.resize(term.cols, term.rows);
         },
         onClose: function() {
