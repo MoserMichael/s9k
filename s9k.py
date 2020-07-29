@@ -673,23 +673,25 @@ def echo(web_socket):
 
     loop_select = True
     while loop_select:
-        #print("before select")
-        read_sock, _, error_socks = select.select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
-        #print("after select")
+        try:
+            #print("before select")
+            read_sock, _, error_socks = select.select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
+            #print("after select read_events {} error_events {}".format(len(read_sock), len(error_socks)))
 
-        if len(read_sock) != 0:
-            print("read_socks {}".format(len(read_sock)))
-            for sock in read_sock:
-                if sock == fd_out:
-                    #print("read from stdout")
-                    msg = process.stdout.readline()
-                    smsg = msg.decode('utf-8')
-                    #print("msg-from-kubectl {}".format(smsg))
-                    web_socket.send(smsg)
+            if len(read_sock) != 0:
+                for sock in read_sock:
+                    if sock == fd_out:
+                        #print("read from stdout")
+                        msg = process.stdout.readline()
+                        if msg is None or len(msg)==0:
+                            loop_select = False
+                            break
+                        smsg = msg.decode('utf-8')
+                        #print("msg-from-kubectl {}".format(smsg))
+                        web_socket.send(smsg)
 
-                elif sock == fd_stream:
-                    print("read from sock {}".format(sock))
-                    try:
+                    elif sock == fd_stream:
+                        #print("read from sock {}".format(sock))
                         msg = web_socket.receive()
                         if msg is None or msg == "":
                             loop_select = False
@@ -698,17 +700,22 @@ def echo(web_socket):
                         msg += '\n'
                         process.stdin.write(msg.encode('utf-8'))
                         process.stdin.flush()
-                    except WebSocketError:
-                        loop_select = False
-                        break
-        if len(error_socks) != 0:
-            #print("error:")
+            if len(error_socks) != 0:
+                #print("error:")
+                loop_select = False
+                break
+        except WebSocketError:
+            loop_select = False
+            break
+        except BrokenPipeError:
             loop_select = False
             break
 
-    process.stdin.close()
-    process.stdout.close()
-
+    try:
+        process.stdin.close()
+        process.stdout.close()
+    except BrokenPipeError:
+        pass
 
 
 def parse_cmd_line():

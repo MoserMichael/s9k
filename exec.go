@@ -313,7 +313,7 @@ func setLogFile() (*os.File) {
 
 func main() {
 
-	/* nice for debugging
+	/*
 	file := setLogFile()
 	defer file.Close()
 	*/
@@ -372,4 +372,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("stream error: %v", err)
 	}
+	log.Print("exit")
+	os.Exit(0)
 }
