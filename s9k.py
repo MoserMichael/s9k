@@ -3,21 +3,15 @@ import subprocess
 import logging
 import shlex
 import argparse
-import ssl
-import json
 import select
-import fcntl
-import os
-import threading
 
-from cheroot import wsgi
-from cheroot.ssl.builtin import BuiltinSSLAdapter
-from beaker.middleware import SessionMiddleware
 import bottle
-from bottle import get
 from bottle.ext.websocket import GeventWebSocketServer
 from bottle.ext.websocket import websocket
 from geventwebsocket import WebSocketError
+from geventwebsocket.handler import WebSocketHandler
+from gevent import pywsgi
+
 
 ERROR_MESSAGE_NO_DATA = "The server failed to get the requested command."
 
@@ -604,27 +598,6 @@ class TerminalAttachScreen(ObjectDetailScreen):
 
 
 
-# Create our own sub-class of Bottle's ServerAdapter
-# so that we can specify SSL. Using just server='cherrypy'
-# uses the default cherrypy server, which doesn't use SSL
-class SSLCherryPyServer(bottle.ServerAdapter):
-
-    def run(self, handler):
-        server = wsgi.Server((self.host, self.port), handler = WebSocketHandler)
-        server.ssl_adapter = BuiltinSSLAdapter(Params.CERT_FILE, Params.KEY_FILE)
-
-        # By default, the server will allow negotiations with extremely old protocols
-        # that are susceptible to attacks, so we only allow TLSv1.2
-        server.ssl_adapter.context.options |= ssl.OP_NO_TLSv1
-        server.ssl_adapter.context.options |= ssl.OP_NO_TLSv1_1
-
-        try:
-            server.start()
-        finally:
-            server.stop()
-
-
-
 api_resources_screen = ApiResources()
 
 app = bottle.Bottle()
@@ -694,13 +667,14 @@ def echo(web_socket):
     fd_stream = stream.fileno()
 
     fd_out = process.stdout.fileno()
-    
-    #print("fd_out {} fd-stream {} fd_stream-in {}".format(fd_out, fd_stream, process.stdin.fileno()))
+
+    #print("fd_out {} fd-stream {} fd_stream-in {}".\
+    #   format(fd_out, fd_stream, process.stdin.fileno()))
 
     loop_select = True
     while loop_select:
         #print("before select")
-        read_sock, _, error_socks =  select.select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
+        read_sock, _, error_socks = select.select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
         #print("after select")
 
         if len(read_sock) != 0:
@@ -731,7 +705,7 @@ def echo(web_socket):
             #print("error:")
             loop_select = False
             break
-    
+
     process.stdin.close()
     process.stdout.close()
 
@@ -768,7 +742,12 @@ def set_info_logger():
     console_handler = logging.StreamHandler()
     root.addHandler(console_handler)
 
+class GeventWebSocketServerSSL(bottle.ServerAdapter):
+    def run(self, handler):
+        server = pywsgi.WSGIServer((self.host, self.port), handler,\
+                        handler_class=WebSocketHandler, keyfile=Params.KEY_FILE, certfile=Params.CERT_FILE)
 
+        server.serve_forever()
 
 def main():
 
@@ -782,27 +761,10 @@ def main():
     if cmd.cert == "" and cmd.key == "":
         bottle.run(app, host=cmd.host, port=cmd.port, server=GeventWebSocketServer)
     else:
-
         Params.CERT_FILE = cmd.cert
         Params.KEY_FILE = cmd.key
 
-        session_opts = {
-            "session.type": "file",
-            "session.cookie_expires": True,
-            "session.data_dir": "./data",
-            "session.auto": True,
-        }
-        # Create the default bottle app and then wrap it around
-        # a beaker middleware and send it back to bottle to run
-        mapp = SessionMiddleware(app, session_opts)
-
-        bottle.run(app=mapp, host=cmd.host, port=cmd.port, server=SSLCherryPyServer)
-
-#        options = {\
-#                "certfile": cmd.cert,\
-#                "keyfile": cmd.key\
-#        }
-#        bottle.run(app, host=cmd.host, port=cmd.port, options=options)
+        bottle.run(app, host=cmd.host, port=cmd.port, server=GeventWebSocketServerSSL)
 
 
 if __name__ == '__main__':
