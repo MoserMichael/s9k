@@ -5,12 +5,12 @@ import shlex
 import argparse
 import select
 
-import bottle
-from bottle.ext.websocket import GeventWebSocketServer
-from bottle.ext.websocket import websocket
 from geventwebsocket import WebSocketError
 from geventwebsocket.handler import WebSocketHandler
 from gevent import pywsgi
+import bottle
+from bottle.ext.websocket import GeventWebSocketServer
+from bottle.ext.websocket import websocket
 
 
 ERROR_MESSAGE_NO_DATA = "The server failed to get the requested command."
