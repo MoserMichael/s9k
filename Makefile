@@ -1,5 +1,7 @@
 
-all:
+all: build-go
+
+build-go: kubeexec
 		GO111MODULE=on go build -o kubeexec github.com/MoserMichael/s9k
 
 init:
@@ -10,4 +12,4 @@ init:
 clean:
 		rm -f kubeexec || true
 
-.PHONY: all init clean
+.PHONY: all build-go init clean
