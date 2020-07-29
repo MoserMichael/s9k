@@ -7,5 +7,7 @@ init:
 		go mod tidy
 		go mod vendor
 
+clean:
+		rm -f kubeexec || true
 
-.PHONY: all init
+.PHONY: all init clean
