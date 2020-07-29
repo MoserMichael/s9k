@@ -56,7 +56,7 @@ CERT="cacert-${HOST}.pem"
 KEY="privkey-${HOST}.pem"
 
 if [[ ! -f $CERT ]] || [[ ! -f $KEY ]]; then
-    openssl req -new -x509 -days 256 -nodes -newkey rsa:4096 -out $CERT -keyout $KEY  -subj '/CN='"${HOST}"'O='"${HOST}"'/C=US'
+    openssl req -new -x509 -days 256 -nodes -newkey rsa:4096 -out $CERT -keyout $KEY  -subj '/CN='"${HOST}"'/O='"${HOST}"'/C=US/OU=s9k'
 fi
 
 ./s9k.py -i $HOST -p $PORT -r $CERT -k $KEY $CMD
