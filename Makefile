@@ -1,7 +1,9 @@
 
-all: build-go
+all: kubeexec
 
-build-go: kubeexec
+
+
+kubeexec: exec.go
 		GO111MODULE=on go build -o kubeexec github.com/MoserMichael/s9k
 
 init:
