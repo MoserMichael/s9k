@@ -449,6 +449,7 @@ class ObjectDetailScreenBase:
 
         self.oname = oname
         self.namespaced = namespaced
+        self.namespace = namespace
 
         self.html_header = self.make_hdr_links(screentype, otype, oname, namespace, namespaced)
         self.html = self.html_header
@@ -501,12 +502,30 @@ class ObjectDetailScreenBase:
             ret += '&nbsp;'
 
         if otype == "pods":
-            ret += '<a href="/shell-attach/{}/{}/{}">terminal-attach</a>'.\
-                    format(isnamespaced, oname, namespace)
+            container_names = self.list_containers()
+            for container_name in container_names:
+                ret += '<a href="/shell-attach/{}/{}/{}/{}">attach-{}</a>'.\
+                        format(isnamespaced, oname, namespace, container_name, container_name)
         return ret
 
     def make_back_link(self, otype, isnamespaced):
         return "<a href='/objectinstances/{0}/{1}'>{0}</a>&nbsp;".format(otype, isnamespaced)
+
+    def list_containers(self):
+        namespace_opt = ""
+        if self.namespaced:
+            namespace_opt = '-n {}'.format(self.namespace)
+
+        list_cmd = "{} get pods {} {} -o jsonpath='{}'".\
+                format(Params.COMMAND_NAME, namespace_opt, self.oname, \
+                    '{.spec.containers[*].name}')
+        command = RunCommand(list_cmd, False)
+
+        if command.exit_code != 0:
+            return []
+
+        print("list_cmd: {} out: {}".format(list_cmd, command.output))
+        return command.output.split()
 
 
 
@@ -557,43 +576,21 @@ class EditObjectScreen:
 
 
 class TerminalAttachScreen(ObjectDetailScreen):
-    def __init__(self, isnamespaced, podname, namespace):
+    def __init__(self, isnamespaced, podname, namespace, containername):
 
         self.isnamespaced = isnamespaced
         self.podname = podname
         self.namespace = namespace
-
-        self.container_names = self.list_containers()
+        self.containername = containername
 
         super().__init__("terminal-attach", "pods", podname, namespace, isnamespaced)
         super
 
-    def list_containers(self):
-        namespace_opt = ""
-        if self.isnamespaced:
-            namespace_opt = '-n {}'.format(self.namespace)
-
-        list_cmd = "{} get pods {} {} -o jsonpath='{}'".\
-                format(Params.COMMAND_NAME, namespace_opt, self.podname, \
-                    '{.spec.containers[*].name}')
-        command = RunCommand(list_cmd, False)
-
-        if command.exit_code != 0:
-            return []
-
-        print("list_cmd: {} out: {}".format(list_cmd, command.output))
-        return command.output.split()
-
     def make_html(self):
-        if len(self.container_names) == 0:
-            return "??? no containers in pod ???"
-
-        first_container = self.container_names[0]
-
         ret = self.html_header
         template = read_static_file('xterm/index.html')
 
-        html = template.format(self.podname, self.namespace, first_container)
+        html = template.format(self.podname, self.namespace, self.containername)
         return ret + html
 
 
@@ -650,9 +647,9 @@ def edit_object_action(action):
 def get_static_file(fname):
     return read_static_file(fname)
 
-@app.route('/shell-attach/<isnamespaced>/<podname>/<namespace>')
-def shell_attach(isnamespaced, podname, namespace):
-    terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace)
+@app.route('/shell-attach/<isnamespaced>/<podname>/<namespace>/<containername>')
+def shell_attach(isnamespaced, podname, namespace, containername):
+    terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace, containername)
     return terminal_attach.make_html()
 
 #@app.route('/socket.io/<fname:path>', apply=[websocket], method="GET")
@@ -675,15 +672,17 @@ def echo(web_socket):
     while loop_select:
         try:
             #print("before select")
-            read_sock, _, error_socks = select.select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
-            #print("after select read_events {} error_events {}".format(len(read_sock), len(error_socks)))
+            read_sock, _, error_socks = \
+                    select.select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
+            #print("after select read_events {} error_events {}".\
+            #        format(len(read_sock), len(error_socks)))
 
             if len(read_sock) != 0:
                 for sock in read_sock:
                     if sock == fd_out:
                         #print("read from stdout")
                         msg = process.stdout.readline()
-                        if msg is None or len(msg)==0:
+                        if msg is None or len(msg) == 0:
                             loop_select = False
                             break
                         smsg = msg.decode('utf-8')
@@ -752,7 +751,8 @@ def set_info_logger():
 class GeventWebSocketServerSSL(bottle.ServerAdapter):
     def run(self, handler):
         server = pywsgi.WSGIServer((self.host, self.port), handler,\
-                        handler_class=WebSocketHandler, keyfile=Params.KEY_FILE, certfile=Params.CERT_FILE)
+                        handler_class=WebSocketHandler, \
+                        keyfile=Params.KEY_FILE, certfile=Params.CERT_FILE)
 
         server.serve_forever()
 
