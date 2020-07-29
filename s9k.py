@@ -682,44 +682,6 @@ def shell_attach(isnamespaced, podname, namespace):
     terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace)
     return terminal_attach.make_html()
 
-#
-#def thread_read_net(process, web_socket):
-#
-#    while True:
-#        msg = web_socket.receive()
-#        if msg is None:
-#            break
-#        print("msg-net {}".format(msg))
-#        process.stdin.write(msg.encode('utf-8'))
-#    print("socket closed")
-#    web_socket.close()
-#    process.stdin.close()
-#    process.stdout.close()
-#
-#
-#
-#def thread_read_proc(process, web_socket):
-#    while True:
-#        msg_in = process.stdout.read()
-#        if msg_in is None:
-#            break
-#        web_socket.send(msg_in)
-#    print("process closed")
-#    web_socket.close()
-#    process.stdin.close()
-#    process.stdout.close()
-#
-#    net_thread = threading.Thread(target=thread_read_net, args=(process, web_socket))
-#    net_thread.start()
-#    proc_thread = threading.Thread(target=thread_read_proc, args=(process, web_socket))
-#    proc_thread.start()
-#
-#    net_thread.join()
-#    proc_thread.join()
-#
-
-
-
 #@app.route('/socket.io/<fname:path>', apply=[websocket], method="GET")
 @app.get('/wssh', apply=[websocket], method="GET")
 def echo(web_socket):
@@ -738,11 +700,11 @@ def echo(web_socket):
     loop_select = True
     while loop_select:
         #print("before select")
-        read_sock, _, error_socks =  select.select([fd_stream, fd_out], [], [fd_stream, fd_out])
+        read_sock, _, error_socks =  select.select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
         #print("after select")
 
         if len(read_sock) != 0:
-            #print("read_socks {}".format(len(read_sock)))
+            print("read_socks {}".format(len(read_sock)))
             for sock in read_sock:
                 if sock == fd_out:
                     #print("read from stdout")
@@ -752,10 +714,10 @@ def echo(web_socket):
                     web_socket.send(smsg)
 
                 elif sock == fd_stream:
-                    #print("read from sock")
+                    print("read from sock {}".format(sock))
                     try:
                         msg = web_socket.receive()
-                        if msg is None:
+                        if msg is None or msg == "":
                             loop_select = False
                             break
                         #print("msg-net {}".format(msg))
@@ -766,69 +728,14 @@ def echo(web_socket):
                         loop_select = False
                         break
         if len(error_socks) != 0:
-            print("error:")
+            #print("error:")
+            loop_select = False
             break
     
     process.stdin.close()
     process.stdout.close()
 
 
-#    poller = select.poll()
-#
-#    fd = process.stdout.fileno()
-##    flag = fcntl.fcntl(fd, fcntl.F_GETFL)
-##    fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
-#    poller.register(fd, select.POLLIN|select.POLLERR|select.POLLHUP)
-#
-#    fd = process.stderr.fileno()
-##    flag = fcntl.fcntl(fd, fcntl.F_GETFL)
-##    fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
-#    poller.register(fd, select.POLLIN|select.POLLERR|select.POLLHUP)
-#
-#    stream = web_socket.stream.handler.rfile
-#
-#    fd = stream.fileno()
-##    flag = fcntl.fcntl(fd, fcntl.F_GETFL)
-##    fcntl.fcntl(fd, fcntl.F_SETFL, flag | os.O_NONBLOCK)
-#    poller.register(fd, select.POLLIN|select.POLLERR|select.POLLHUP)
-#
-#    print("stdout {} websock {}".\
-#            format(process.stdout.fileno(), stream.fileno()))
-#
-#    do_loop = True
-#
-#    while do_loop:
-#        fd_events = poller.poll(1000)
-#
-#        print("num_events {}".format(len(fd_events)))
-#        for descriptor, event in fd_events:
-#            msg = ""
-#
-#            print("descriptor {} event {} ".format(descriptor, event))
-#            if event != select.POLLIN:
-#                do_loop = False
-#                break
-#
-#            if descriptor == process.stdout.fileno():
-#                msg = process.stdout.readline()
-#                print("msg-from-kubectl {}".format(msg))
-#                web_socket.send(msg)
-#            elif descriptor == process.stderr.fileno():
-#                msg = process.stderr.readline()
-#                print("debug-from-kubectl {}".format(msg))
-#            elif descriptor == stream.fileno():
-#                msg = web_socket.receive()
-#                print("msg-net {}".format(msg))
-#                process.stdin.write(msg.encode('utf-8'))
-#                process.stdin.flush()
-#            else:
-#                print("nothing of the sort")
-#                next
-#
-#
-#
-#    print("service websocket connection finished")
-#
 
 def parse_cmd_line():
     usage = '''Web application that parses kubectl output in a nice manner.
