@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/sh -e
 
 function Help {
 cat <<EOF
@@ -12,6 +12,7 @@ run s9k.py python script with tls, creates a self signed certificate if needed.
 -p  <port>  - listening port (default $PORT)
 -c  <cmd>   - (optional) kubectl command. (default kubectl)
 -v          - verbose output
+-d          - run in docker (listen on eth0)
 
 EOF
 
@@ -22,7 +23,7 @@ PORT="8000"
 HOST="localhost"
 CMD=""
 
-while getopts "vhi:p:c:" opt; do
+while getopts "vhdi:p:c:" opt; do
   case ${opt} in
     h)
 	Help
@@ -32,6 +33,9 @@ while getopts "vhi:p:c:" opt; do
         ;;
     i)
         HOST="$OPTARG"
+        ;;
+    d)
+        HOST=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
         ;;
     c)
         CMD="-c $OPTARG"
@@ -59,4 +63,6 @@ if [[ ! -f $CERT ]] || [[ ! -f $KEY ]]; then
     openssl req -new -x509 -days 256 -nodes -newkey rsa:4096 -out $CERT -keyout $KEY  -subj '/CN='"${HOST}"'/O='"${HOST}"'/C=US/OU=s9k'
 fi
 
-./s9k.py -i $HOST -p $PORT -r $CERT -k $KEY $CMD
+SCRIPT_DIR=$(dirname "$0")
+
+${SCRIPT_DIR}/s9k.py -i $HOST -p $PORT -r $CERT -k $KEY $CMD

@@ -12,13 +12,6 @@ This application is written in python3 and requires the [bottle library](https:/
 ```
 sudo pip3 install bottle
 
-# for tls support
-sudo pip3 install cherrypy
-
-# for tls support
-sudo pip3 install beaker
-
-# for websocket support
 sudo pip3 install  bottle-websocket
 ```
 
@@ -62,4 +55,3 @@ run s9k.py python script with tls, creates a self signed certificate if needed.
 
 ## Acknowledgements
 
-Used the following trick for enabling ssl support in bottle: [link](https://github.com/nickbabcock/bottle-ssl)
