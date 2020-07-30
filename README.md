@@ -6,20 +6,6 @@
 
 This script [s9k] is a simple web server that serves a webapp with similar functionality as k9s. It works by parsing the output of kubectl.
 
-### Installing the requirements
-
-Need to have python3 on the system.
-
-Install dependent packages:
-
-```
-sudo pip3 install bottle
-
-sudo pip3 install bottle-websocket
-```
-
-run make in project directory to build a go based executable required to attach a terminal to a container in a pod.
-
 ### Running the script from docker image
 
 The following command runs the server in a docker environment; the public docker image is quay.io/mmoser/s9k-mm 
@@ -62,6 +48,20 @@ Common options:
 -c  <image> - override the container image location (default quay.io/mmoser/s9k-mm)
 -v          - run verbosely
 ```
+
+### Running locally / Installing the requirements
+
+Need to have python3 on the system.
+
+Install dependent packages:
+
+```
+sudo pip3 install bottle
+
+sudo pip3 install bottle-websocket
+```
+
+run make in project directory to build a go based executable required to attach a terminal to a container in a pod.
 
 ### Running the script locally
 
