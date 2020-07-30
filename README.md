@@ -6,6 +6,12 @@
 
 This script [s9k] is a simple web server that serves a webapp with similar functionality as k9s. It works by parsing the output of kubectl.
 
+Here is a presentation:
+
+<p align="center">
+  <img src="https://github.com/MoserMichael/s9k/releases/download/presentation/peek-2.gif">
+</p>
+
 ### Running the script from docker image
 
 The following command runs the server in a docker environment; the public docker image is quay.io/mmoser/s9k-mm 
