@@ -9,7 +9,7 @@ This script [s9k] is a simple web server that serves a webapp with similar funct
 Here is a presentation:
 
 <p align="center">
-  <img src="https://github.com/MoserMichael/s9k/releases/download/presentation/peek-2.gif">
+  <img src="/MoserMichael/s9k/releases/download/presentation/peek-2.gif" />
 </p>
 
 ### Running the script from docker image
