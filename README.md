@@ -12,7 +12,7 @@ The following command runs the server in a docker environment; the public docker
 
 ./run-in-docker.sh -r
 
-You can now access the web application by following url http://127.0.0.1:8000 (a self-signed certificate is created on each run)
+You can now access the web application by following url https://127.0.0.1:8000 (a self-signed certificate is created on each run)
 
 Stop the web server with the following command:
 
