@@ -89,11 +89,11 @@ optional arguments:
 
 You can customize it with the following command line options
 
+```
 ./s9k.sh  [-i <host>] [-p <port>] [-c <cmd>] [-v -h]
 
 run s9k.py python script with tls, creates a self signed certificate if needed.
 
-```
 -i  <host>  - listening host (default localhost)
 -p  <port>  - listening port (default 8000)
 -c  <cmd>   - (optional) kubectl command. (default kubectl)
