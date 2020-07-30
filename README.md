@@ -1,15 +1,14 @@
 
 
 ## Web based UI for managing kubernetes clusters
-.
 
-This is a simple web server that serves a HTML application designed to manage kubernetes clusters.
+This is a simple web server that serves a web application designed to manage kubernetes clusters.
 You can view and modify all kubernetes api resources and attach a terminal to a container running in a pod.
 
-It works by parsing the output of kubectl. 
+It works by parsing the output of kubectl.
 Here is a link to a short presentation: [gif animation](https://github.com/MoserMichael/s9k/releases/download/presentation/peek-2.gif) 
 
-The functionality of this application is similar in functionality to the [k9s](https://github.com/derailed/k9s), that is a character UI application for managing kubernetes clusters.
+This application is similar in functionality to [k9s](https://github.com/derailed/k9s), that is a character UI application for managing kubernetes clusters.
 
 ### Running the script from docker image
 
