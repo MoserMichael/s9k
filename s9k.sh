@@ -12,7 +12,7 @@ run s9k.py python script with tls, creates a self signed certificate if needed.
 -p  <port>  - listening port (default $PORT)
 -c  <cmd>   - (optional) kubectl command. (default kubectl)
 -v          - verbose output
--d          - run in docker (listen on eth0)
+-d          - internal option to run in docker (listen on eth0, and take kubeconfig from mounted path)
 
 EOF
 
@@ -35,14 +35,17 @@ while getopts "vhdi:p:c:" opt; do
         HOST="$OPTARG"
         ;;
     d)
-        HOST=$(/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}')
+        # run as docker entrypoint
+        HOST="$DHOST"
+        PORT="$DPORT"
+        MOUNT_OPT="--kubeconfig=/kube-mount"
         ;;
     c)
         CMD="-c $OPTARG"
         ;;
     v)
         set -x
-        export PS4='+(${BASH_SOURCE}:${LINENO})'
+        export PS4='+(${BASH_SOURCE}:${LINENO}) '
         VERBOSE=1
         ;; 
     *)
@@ -65,4 +68,4 @@ fi
 
 SCRIPT_DIR=$(dirname "$0")
 
-${SCRIPT_DIR}/s9k.py -i $HOST -p $PORT -r $CERT -k $KEY $CMD
+${SCRIPT_DIR}/s9k.py -i $HOST -p $PORT -r $CERT -k $KEY $CMD $MOUNT_OPT 

@@ -44,35 +44,6 @@ type DataPayload struct {
 }
 
 
-/*
-func parseFlags() (*TermConnectPayload) {
-
-	ret := &TermConnectPayload{}
-
-	tmp := flag.String("namespace", "",  "namespace of the pod")
-	if tmp != nil {
-		ret.Namespace = *tmp
-	}
-	tmp = flag.String("pod_name", "", "name of the pod")
-	if tmp != nil {
-		ret.PodName = *tmp
-	}
-	tmp = flag.String("container_name", "", "name of the container")
-	if tmp != nil {
-		ret.ContainerName = *tmp
-	}
-
-	flag.Parse()
-
-	if  ret.PodName == "" {
-		log.Fatal("Error: no pod_name specified")
-		os.Exit(1)
-	}
-
-	return  ret
-}
-*/
-
 func HomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h

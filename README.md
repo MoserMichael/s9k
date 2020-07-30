@@ -5,20 +5,67 @@
 [k9s](https://github.com/derailed/k9s) is a character UI application for managing kubernetes clusters.
 
 This script [s9k] is a simple web server that serves a webapp with similar functionality as k9s. It works by parsing the output of kubectl.
-This application is written in python3 and requires the [bottle library](https://bottlepy.org/docs/dev/), It also requires the presence of kubectl.
-
 
 ### Installing the requirements
+
+Need to have python3 on the system.
+
+Install dependent packages:
+
 ```
 sudo pip3 install bottle
 
-sudo pip3 install  bottle-websocket
+sudo pip3 install bottle-websocket
 ```
 
-### Running the script
+run make in project directory to build a go based executable required to attach a terminal to a container in a pod.
 
-by default it listens on localhost on port 8000
+### Running the script from docker image
 
+The following command runs the server in a docker environment; the public docker image is quay.io/mmoser/s9k-mm 
+
+./run-in-docker.sh -r
+
+You can now access the web application by following url http://127.0.0.1:8000 (a self-signed certificate is created on each run)
+
+Stop the web server with the following command:
+
+./run-in-docker.sh -s
+
+Additional options to run the script:
+
+```
+./run-in-docker.sh  -h
+
+Start s9k in docker
+
+./run-in-docker.sh -r [-p <port>] [-i <host>] [-d <dir>] [-v] [-c <image>]
+
+Stop s9k in docker
+
+Run s9k web server in a docker; by default the docker image is fetched from a public repository. (quay.io/mmoser/s9k-mm)
+The web server creates a self-signed certificate on each docker run
+
+Start the web server fir s9k
+
+-r          - start the web server
+-p  <port>  - listening port (default 8000)
+-i  <host>  - listening host (default 127.0.0.1)
+-d  <dir>   - directory where kube config is (default /home/mmoser/.kube)
+
+Stop the web server for s9k
+
+-s          - stop the web server
+
+Common options:
+
+-c  <image> - override the container image location (default quay.io/mmoser/s9k-mm)
+-v          - run verbosely
+```
+
+### Running the script locally
+
+./s9k.py runs the server; by default you can then connect to http://localhost:8000
 
 You can customize it with the following command line options
 ```
@@ -38,20 +85,24 @@ optional arguments:
 
 ```
 
-The script ./s9k.sh creates a self-signed certificate and passes it to s9k.py; (requires presence of openssl).
+./s9k.sh runs the server, it also creates a self signed certificate for the server, connect to https://localhost:8000 (you get a browser warning on self signed certificates)
 
-usage of s9k.sh
+You can customize it with the following command line options
 
-```
 ./s9k.sh  [-i <host>] [-p <port>] [-c <cmd>] [-v -h]
 
 run s9k.py python script with tls, creates a self signed certificate if needed.
 
+```
 -i  <host>  - listening host (default localhost)
 -p  <port>  - listening port (default 8000)
 -c  <cmd>   - (optional) kubectl command. (default kubectl)
 -v          - verbose output
+-d          - internal option to run in docker (listen on eth0, and take kubeconfig from mounted path)
 ```
 
 ## Acknowledgements
 
+Adapted the [websocket terminal](https://github.com/sorgloomer/websocket_terminal) project by [sorgloomer](https://github.com/sorgloomer) for this project.
+
+Thanks to the python [bottle framework](https://bottlepy.org/docs/dev/) and [bottle-websocket](https://pypi.org/project/bottle-websocket/) package.

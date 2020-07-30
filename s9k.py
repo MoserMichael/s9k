@@ -4,6 +4,7 @@ import logging
 import shlex
 import argparse
 import select
+import os
 
 from geventwebsocket import WebSocketError
 from geventwebsocket.handler import WebSocketHandler
@@ -27,9 +28,25 @@ def get_style_sheet():
     return read_static_file("css.css")
 
 class Params:
-    COMMAND_NAME = "kubectl"
-    CERT_FILE = "cert.pem"
-    KEY_FILE = "key.pem"
+    kubeconfig_file = ""
+    command_name = "kubectl"
+    cert_file = "cert.pem"
+    key_file = "key.pem"
+
+    def __init__(self):
+        pass
+
+    def set_config(self, kubeconfig_cmd, kubeconfig_dir):
+        self.command_name = kubeconfig_cmd
+        if kubeconfig_dir != "":
+            self.kubeconfig_file = " --kubeconfig={}/config".format(kubeconfig_dir)
+            self.command_name += self.kubeconfig_file
+
+    def set_cert_files(self, key_file, cert_file):
+        self.cert_file = cert_file
+        self.key_file = key_file
+
+params = Params()
 
 def get_home_link():
     return "<a href='/'>Home</a>&nbsp;"
@@ -146,9 +163,9 @@ class ClientGoCmd:
 
     def process(self, entity, is_namespaced, column_defs):
         if is_namespaced:
-            command_text = "{} get {} -A".format(Params.COMMAND_NAME, entity)
+            command_text = "{} get {} -A".format(params.command_name, entity)
         else:
-            command_text = "{} get {}".format(Params.COMMAND_NAME, entity)
+            command_text = "{} get {}".format(params.command_name, entity)
 
 
         if column_defs is not None:
@@ -294,8 +311,10 @@ function deleteobj() {
 
 class ApiResources:
     def __init__(self):
+        pass
 
-        cmd = Params.COMMAND_NAME + " api-resources"
+    def load(self):
+        cmd = params.command_name + " api-resources"
         run_command = RunCommand(cmd)
 
         #for whatever reasons kubectl api-resources often returns error status,
@@ -348,7 +367,7 @@ class ObjectListScreen:
             add += "--selector {}".format(label_sel)
 
         cmd = "{} get {} -o wide {} --show-labels {}".format(\
-                Params.COMMAND_NAME, oname, cli_param, add)
+                params.command_name, oname, cli_param, add)
         run_command = RunCommand(cmd)
 
         if run_command.exit_code == 0 and len(run_command.lines) != 0:
@@ -411,7 +430,7 @@ class CrdScreen:
 
     def make_html(self):
         hdr = CrdScreen.make_hdr_links()
-        cmd = '{} get -A {}'.format(Params.COMMAND_NAME, self.oname)
+        cmd = '{} get -A {}'.format(params.command_name, self.oname)
         run_command = RunCommand(cmd)
 
         if run_command.exit_code == 0 and len(run_command.lines) != 0:
@@ -467,7 +486,7 @@ class ObjectDetailScreenBase:
         nspace = ""
         if namespace != 'None':
             nspace = '-n {}'.format(namespace)
-        cmd = request_def[1].format(Params.COMMAND_NAME, otype, oname, nspace)
+        cmd = request_def[1].format(params.command_name, otype, oname, nspace)
         return cmd
 
     def add_table(self, cmd, is_editable):
@@ -517,7 +536,7 @@ class ObjectDetailScreenBase:
             namespace_opt = '-n {}'.format(self.namespace)
 
         list_cmd = "{} get pods {} {} -o jsonpath='{}'".\
-                format(Params.COMMAND_NAME, namespace_opt, self.oname, \
+                format(params.command_name, namespace_opt, self.oname, \
                     '{.spec.containers[*].name}')
         command = RunCommand(list_cmd, False)
 
@@ -562,7 +581,7 @@ class EditObjectScreen:
         self.run(action, object_to_save)
 
     def run(self, action, object_to_save):
-        cmd = "{} {} -f -".format(Params.COMMAND_NAME, action)
+        cmd = "{} {} -f -".format(params.command_name, action)
         print("cmd:", cmd)
         run_command = RunCommand(cmd, True, pipe_as_input=object_to_save)
         if run_command.exit_code == 0:
@@ -656,8 +675,10 @@ def shell_attach(isnamespaced, podname, namespace, containername):
 @app.get('/wssh', apply=[websocket], method="GET")
 def echo(web_socket):
 
-    cmd = "./kubeexec"
-    process = subprocess.Popen([cmd], \
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    cmd = "{}/kubeexec {}".format(script_dir, params.kubeconfig_file)
+
+    process = subprocess.Popen(shlex.split(cmd), \
                         stdout=subprocess.PIPE, stdin=subprocess.PIPE) #, stderr=subprocess.PIPE)
 
     stream = web_socket.stream.handler.rfile
@@ -737,6 +758,9 @@ def parse_cmd_line():
     parse.add_argument('--key', '-k', type=str, dest='key', default='',\
             help='TLS private key file')
 
+    parse.add_argument('--kubeconfig', '-f', type=str, dest='config', default='',\
+            help='kubeconfig directory (use default if empty)')
+
     return parse.parse_args()
 
 def set_info_logger():
@@ -752,7 +776,7 @@ class GeventWebSocketServerSSL(bottle.ServerAdapter):
     def run(self, handler):
         server = pywsgi.WSGIServer((self.host, self.port), handler,\
                         handler_class=WebSocketHandler, \
-                        keyfile=Params.KEY_FILE, certfile=Params.CERT_FILE)
+                        keyfile=params.key_file, certfile=params.cert_file)
 
         server.serve_forever()
 
@@ -763,17 +787,17 @@ def main():
     logging.info("host: %s port: %s command: %s certfile: %s keyfile: %s",\
                 cmd.host, cmd.port, cmd.kubectl, cmd.cert, cmd.key)
 
-    Params.COMMAND_NAME = cmd.kubectl
+    params.set_config(cmd.kubectl, cmd.config)
+
+    api_resources_screen.load()
 
     if cmd.cert == "" and cmd.key == "":
         bottle.run(app, host=cmd.host, port=cmd.port, server=GeventWebSocketServer)
     else:
-        Params.CERT_FILE = cmd.cert
-        Params.KEY_FILE = cmd.key
+        params.set_cert_files(cmd.key, cmd.cert)
 
         bottle.run(app, host=cmd.host, port=cmd.port, server=GeventWebSocketServerSSL)
 
 
 if __name__ == '__main__':
-
     main()
