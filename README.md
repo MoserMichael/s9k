@@ -36,7 +36,7 @@ Stop s9k in docker
 Run s9k web server in a docker; by default the docker image is fetched from a public repository. (quay.io/mmoser/s9k-mm)
 The web server creates a self-signed certificate on each docker run
 
-Start the web server fir s9k
+Start the web server for s9k
 
 -r          - start the web server
 -p  <port>  - listening port (default 8000)
