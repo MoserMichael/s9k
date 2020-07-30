@@ -4,7 +4,10 @@
 
 [k9s](https://github.com/derailed/k9s) is a character UI application for managing kubernetes clusters.
 
-This script [s9k] is a simple web server that serves a webapp with similar functionality as k9s. It works by parsing the output of kubectl.
+This script [s9k] is a simple web server that serves a HTML application designed to manage kubernetes clusters.
+You can view and modify all kubernetes api resources and attach a terminal to a container running in a pod.
+
+It works by parsing the output of kubectl. The functionality of this application is similar in functionality to the k9s application. 
 
 Here is a link to a presentation: [gif animation](https://github.com/MoserMichael/s9k/releases/download/presentation/peek-2.gif) 
 
