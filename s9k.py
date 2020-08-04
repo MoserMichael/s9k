@@ -1,15 +1,15 @@
 #!/usr/bin/python3
-import subprocess
 import logging
 import shlex
 import argparse
-import select
 import os
 
 from geventwebsocket import WebSocketError
 from geventwebsocket.handler import WebSocketHandler
 from gevent import pywsgi
+from gevent.select import select
 from gevent.subprocess import Popen, PIPE
+
 import bottle
 from bottle.ext.websocket import GeventWebSocketServer
 from bottle.ext.websocket import websocket
@@ -312,7 +312,10 @@ function deleteobj() {
 
 class ApiResources:
     def __init__(self):
-        pass
+        self.html_table = None
+        self.name_index = None
+        self.namespaced_index = None
+        self.error_message = None
 
     def load(self):
         cmd = params.command_name + " api-resources"
@@ -695,7 +698,7 @@ def echo(web_socket):
         try:
             #print("before select")
             read_sock, _, error_socks = \
-                    select.select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
+                    select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
             #print("after select read_events {} error_events {}".\
             #        format(len(read_sock), len(error_socks)))
 
