@@ -12,7 +12,7 @@ This application is similar in functionality to [k9s](https://github.com/deraile
 
 ### Running the script from docker image
 
-The following command runs the server in a docker environment; the public docker image is quay.io/mmoser/s9k-mm 
+The following script in this repository runs the server in a docker environment; the public docker image is quay.io/mmoser/s9k-mm 
 
 ./run-in-docker.sh -r
 
@@ -106,6 +106,8 @@ run s9k.py python script with tls, creates a self signed certificate if needed.
 ```
 
 ## Acknowledgements
+
+Thanks to [Fernand Galiana](https://github.com/derailed), the author of [k9s](https://github.com/derailed/k9s)  
 
 Adapted the [websocket terminal](https://github.com/sorgloomer/websocket_terminal) project by [sorgloomer](https://github.com/sorgloomer) for this project.
 
