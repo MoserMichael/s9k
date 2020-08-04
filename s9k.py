@@ -9,6 +9,7 @@ import os
 from geventwebsocket import WebSocketError
 from geventwebsocket.handler import WebSocketHandler
 from gevent import pywsgi
+from gevent.subprocess import Popen, PIPE
 import bottle
 from bottle.ext.websocket import GeventWebSocketServer
 from bottle.ext.websocket import websocket
@@ -64,14 +65,14 @@ class RunCommand:
 
 
         if pipe_as_input is None:
-            process = subprocess.Popen(shlex.split(command_line), \
-                        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = Popen(shlex.split(command_line), \
+                        stdout=PIPE, stderr=PIPE)
 
             (output, error_out) = process.communicate()
             self.exit_code = process.wait()
         else:
-            process = subprocess.Popen(shlex.split(command_line), \
-                        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = Popen(shlex.split(command_line), \
+                        stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
             (output, error_out) = process.communicate(input=pipe_as_input.encode("utf-8"))
             self.exit_code = process.wait()
@@ -678,8 +679,8 @@ def echo(web_socket):
     script_dir = os.path.dirname(os.path.abspath(__file__))
     cmd = "{}/kubeexec {}".format(script_dir, params.kubeconfig_file)
 
-    process = subprocess.Popen(shlex.split(cmd), \
-                        stdout=subprocess.PIPE, stdin=subprocess.PIPE) #, stderr=subprocess.PIPE)
+    process = Popen(shlex.split(cmd), \
+                        stdout=PIPE, stdin=PIPE) #, stderr=PIPE)
 
     stream = web_socket.stream.handler.rfile
     fd_stream = stream.fileno()
