@@ -10,6 +10,9 @@ Here is a link to a short presentation: [gif animation](https://github.com/Moser
 
 This application is similar in functionality to [k9s](https://github.com/derailed/k9s), that is a character UI application for managing kubernetes clusters.
 
+
+Also please see [my comparison](https://github.com/MoserMichael/s9k/blob/master/compare-tui-webui.md) of the various management applications.
+
 ### Running the script from docker image
 
 The following script in this repository runs the server in a docker environment; the public docker image is quay.io/mmoser/s9k-mm 
