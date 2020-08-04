@@ -34,6 +34,7 @@ RUN apk update \
   && pip3 install -v bottle bottle-websocket  \
   && curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /bin/kubectl \
   && chmod +x /bin/kubectl \
+  && apk del gcc make curl \
   && rm /var/cache/apk/* 
 
 # && apk del --purge deps py3-pip curl make gcc binutils  \
