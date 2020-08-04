@@ -110,3 +110,10 @@ run s9k.py python script with tls, creates a self signed certificate if needed.
 Adapted the [websocket terminal](https://github.com/sorgloomer/websocket_terminal) project by [sorgloomer](https://github.com/sorgloomer) for this project.
 
 Thanks to the python [bottle framework](https://bottlepy.org/docs/dev/) and [bottle-websocket](https://pypi.org/project/bottle-websocket/) package.
+
+
+## what I learned while writing this project
+
+I started as a simple web application in python; a web search suggested to use the bottle framework for that, so go for it. Later I wanted to add the ability of hosting a terminal session to a pod in the browser (wrap kubectl exec for this application); that's where the challenge started: First I had to use xterm in the browser, and xterm is talking to the server via web sockets; the server now has to forward data read via websockets to a go based executable (and reverse direction also) that is connecting to the terminal via client-go (regular kubectl exec was not enough here). Now support for websockets with bottle is not trivial; bottle uses wsgi for the web server, now every server that does wsgi has a slightly different idea of how this standard looks like. I didn't manage to add websocket support for cherrypy, now luckily there is the alternative to gevent based geventwebsocket; gevent uses a co-thread based library for python, so i had to become familiar with greenlets, my select loop of handling the web socket made the whole application get stuck while handling the web socket, that was fixed by using gevent based select and popen primitives that play well with greenlets; now all this stuff made building of the docker image quite complicated - pip install now needs to build the whole gevent based goodness as native code;
+
+The lesson of this story is that most open source frameworks are simple and pleasant to use while you stick to the common use cases, when you need to go slightly off the beaten track then things tend to get complicated...
