@@ -252,13 +252,22 @@ class HtmlTable:
         return self.html_text
 
     def make_table_header(self, column_subset):
-        hdr = '<table><thead><tr>'
+        hdr = HtmlTable.make_sort_jscript()
+
+        hdr += '<table class="js-sort-table"><thead><tr>'
         for pos in range(len(self.titles)):
             if column_subset is None or pos in column_subset:
                 title = self.titles[pos]
+                #hdr += '<th align="left"><a onclick="sortTable({})">{}</a></th>'.format(pos, title)
                 hdr += '<th align="left">{}</th>'.format(title)
         hdr += '</tr></thead>'
         return hdr
+
+    @staticmethod
+    def make_sort_jscript():
+        return "<script>\n" + \
+                read_static_file("sorttable/sort-table.min.js") + \
+                '</script>'
 
     @staticmethod
     def make_object_link_def(line, title_pos):
