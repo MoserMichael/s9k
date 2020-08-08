@@ -53,7 +53,9 @@ At every point you can get the full list of shortcuts by typing the question mar
 
 ### s9k
 
-I think the WeBUI is the easiest to learn, due to the fact that web applications are so common these days (but i may be wrong here as I was the author of this application)
+I think the Web UI is the easiest to learn, due to the fact that web applications are so common these days (but i may be wrong here as I was the author of this application)
+
+Also there are many common conventions in html pages that are useful, like clicking on table headers to sort the table rows, or Ctrl+F brings up a box for searching in a page. With TUI one would have to make a set of short cuts for these, and all these shortcuts are different, as there is little consistency here between applications.
 
 
 ## Conclusions
