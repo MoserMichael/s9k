@@ -6,7 +6,9 @@ This is a simple web server that serves a web application designed to manage kub
 You can view and modify all kubernetes api resources and attach a terminal to a container running in a pod.
 
 It works by parsing the output of kubectl.
-Here is a link to a short presentation: [gif animation](https://github.com/MoserMichael/s9k/releases/download/presentation/peek-2.gif) 
+
+[![click to view presentation](https://img.youtube.com/vi/yjSStb9JZ7g/0.jpg)](https://www.youtube.com/watch?v=yjSStb9JZ7g)
+
 
 This application is similar in functionality to [k9s](https://github.com/derailed/k9s), that is a character UI application for managing kubernetes clusters.
 
