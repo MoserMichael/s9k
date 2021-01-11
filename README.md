@@ -7,11 +7,11 @@ You can view and modify all kubernetes api resources and attach a terminal to a 
 
 It works by parsing the output of kubectl.
 
+Click on picture to view presentation on youtube
 [![click to view presentation](https://img.youtube.com/vi/yjSStb9JZ7g/0.jpg)](https://www.youtube.com/watch?v=yjSStb9JZ7g)
 
 
 This application is similar in functionality to [k9s](https://github.com/derailed/k9s), that is a character UI application for managing kubernetes clusters.
-
 
 Also please see [my comparison](https://github.com/MoserMichael/s9k/blob/master/compare-tui-webui.md) of the various management applications.
 
