@@ -7,7 +7,8 @@ You can view and modify all kubernetes api resources and attach a terminal to a 
 
 It works by parsing the output of kubectl.
 
-Click on picture to view presentation on youtube
+(Click on picture to view presentation on youtube)
+
 [![click to view presentation](https://img.youtube.com/vi/yjSStb9JZ7g/0.jpg)](https://www.youtube.com/watch?v=yjSStb9JZ7g)
 
 
