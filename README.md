@@ -17,13 +17,23 @@ Also please see [my comparison](https://github.com/MoserMichael/s9k/blob/master/
 
 ### Running the script from docker image
 
-The following script in this repository runs the server in a docker environment; the public docker image is quay.io/mmoser/s9k-mm 
+The following script in this repository runs the server in a docker environment; the public docker image is ghcr.io/mosermichael/s9k-mm latest
 
 ```
 ./run-in-docker.sh -r
 ```
 
+You can now access the web application by following url http://127.0.0.1:8000 
+
+
+Or:
+
+```
+./run-in-docker.sh -r -t
+```
+
 You can now access the web application by following url https://127.0.0.1:8000 (a self-signed certificate is created on each run)
+
 
 Stop the web server with the following command:
 
@@ -36,21 +46,23 @@ Additional options to run the script:
 ```
 ./run-in-docker.sh  -h
 
+
 Start s9k in docker
 
 ./run-in-docker.sh -r [-p <port>] [-i <host>] [-d <dir>] [-v] [-c <image>]
 
 Stop s9k in docker
 
-Run s9k web server in a docker; by default the docker image is fetched from a public repository. (quay.io/mmoser/s9k-mm)
+Run s9k web server in a docker; by default the docker image is fetched from a public repository. (ghcr.io/mosermichael/s9k-mm:latest)
 The web server creates a self-signed certificate on each docker run
 
 Start the web server for s9k
 
 -r          - start the web server
 -p  <port>  - listening port (default 8000)
--i  <host>  - listening host (default 127.0.0.1)
--d  <dir>   - directory where kube config is (default /home/mmoser/.kube)
+-i  <host>  - listening host (default 0.0.0.0)
+-d  <dir>   - directory where kube config is (default /Users/mmoser/.kube)
+-t          - enable TLS/SSL (self signed cert)
 
 Stop the web server for s9k
 
@@ -58,8 +70,9 @@ Stop the web server for s9k
 
 Common options:
 
--c  <image> - override the container image location (default quay.io/mmoser/s9k-mm)
+-c  <image> - override the container image location (default ghcr.io/mosermichael/s9k-mm:latest)
 -v          - run verbosely
+
 ```
 
 ### Running locally / Installing the requirements

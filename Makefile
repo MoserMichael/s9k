@@ -11,7 +11,7 @@ kubexec-no-mod: exec.go
  
 
 init:
-		go mod init github.com/MoserMichael/s9k
+		go mod init github.com/mosermichael/s9k
 		go mod tidy
 		go mod vendor
 
@@ -19,6 +19,9 @@ clean:
 		rm -f kubeexec || true
 
 container-build:
-		docker build -f Dockerfile -t s9k-mm . 2>&1 | tee container-build.log
+		docker build -f Dockerfile -t ghcr.io/mosermichael/s9k-mm:latest . 2>&1 | tee container-build.log
 
-.PHONY: all kubexec-no-mod build init clean container-build
+container-push:
+		./container-push.sh ghcr.io/mosermichael/s9k-mm latest
+
+.PHONY: all kubexec-no-mod build init clean container-build container-push

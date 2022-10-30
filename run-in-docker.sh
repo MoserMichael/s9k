@@ -1,9 +1,9 @@
 #!/bin/bash
 
 PORT="8000"
-HOST=127.0.0.1
+HOST=0.0.0.0
 KUBE_DIR="$HOME/.kube"
-IMAGE_LOCATION="quay.io/mmoser/s9k-mm"
+IMAGE_LOCATION=ghcr.io/mosermichael/s9k-mm:latest
 
 Help() {
 cat <<EOF
@@ -23,6 +23,7 @@ Start the web server for s9k
 -p  <port>  - listening port (default ${PORT})
 -i  <host>  - listening host (default ${HOST})
 -d  <dir>   - directory where kube config is (default ${KUBE_DIR})
+-t          - enable TLS/SSL (self signed cert)
 
 Stop the web server for s9k
 
@@ -38,7 +39,9 @@ EOF
 exit 1
 }
 
-while getopts "hrsvi:p:c:" opt; do
+SSL="off"
+
+while getopts "htrsvi:p:c:" opt; do
   case ${opt} in
     h)
         Help
@@ -58,6 +61,9 @@ while getopts "hrsvi:p:c:" opt; do
     c)
         IMAGE_LOCATION="$OPTARG"
         ;;
+    t)
+        SSL="on"
+        ;;
     d)
         KUBE_DIR="$OPTARG"
         ;;
@@ -72,13 +78,23 @@ while getopts "hrsvi:p:c:" opt; do
 done
 
 if [[ $ACTION == 'start' ]]; then
-    docker run --network=host -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -dt ${IMAGE_LOCATION} 
-    echo "Listen on https://${HOST}:${PORT}"
+    
+    if [[ "${SSL}" == "on" ]]; then
+        docker run --rm --name s9k-net -p $PORT:$PORT -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -e SSL=on -dt ${IMAGE_LOCATION} 
+        PROTO="https"
+
+        echo ""
+        echo "Note: Runs with self signed certificate"
+        echo ""
+    else
+        docker run --rm --name s9k-net -p $PORT:$PORT -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -dt ${IMAGE_LOCATION} 
+        PROTO="http"
+    fi
+    echo "Listen on $PROTO://${HOST}:${PORT}"
 else 
   if [[ $ACTION == 'stop' ]]; then
     DOCKER_ID=$(docker ps | grep ${IMAGE_LOCATION}[[:space:]] | awk '{ print $1 }')
     docker stop $DOCKER_ID
-    docker rm $DOCKER_ID
   else
     Help 'must use either to start the server -r or to stop it -s'
   fi

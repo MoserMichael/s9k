@@ -28,14 +28,16 @@ ENV KUBE_LATEST_VERSION="v1.18.1"
 #  && apk add --update -t deps binutils file gcc libc-dev libev python3-dev libffi-dev curl python3 py3-pip \
 #  && (pip3 install -v bottle bottle-websocket || /bin/true)
 
-RUN apk update \
-  && apk add --update ca-certificates \
-  && apk add --update -t deps binutils file gcc make libc-dev libev python3-dev libffi-dev curl python3 py3-pip openssl \
-  && pip3 install -v bottle bottle-websocket  \
-  && curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /bin/kubectl \
-  && chmod +x /bin/kubectl \
-  && apk del gcc make curl \
-  && rm /var/cache/apk/* 
+RUN apk update 
+RUN apk add bash 
+RUN apk add --update ca-certificates 
+RUN apk add --update -t deps binutils file gcc make libc-dev libev python3-dev libffi-dev curl python3 py3-pip openssl 
+RUN pip3 install --upgrade pip
+RUN pip3 install bottle bottle bottle-websocket 
+RUN curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /bin/kubectl 
+RUN chmod +x /bin/kubectl 
+RUN apk del gcc make curl 
+RUN  rm /var/cache/apk/* 
 
 # && apk del --purge deps py3-pip curl make gcc binutils  \
 

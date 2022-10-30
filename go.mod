@@ -3,6 +3,7 @@ module github.com/MoserMichael/s9k
 go 1.13
 
 require (
+	golang.org/x/sys v0.1.0 // indirect
 	k8s.io/api v0.0.0-20200726131424-9540e4cac147
 	k8s.io/apimachinery v0.0.0-20200726131235-945d4ebf362b
 	k8s.io/client-go v0.0.0-20200726131703-36233866f1c7
