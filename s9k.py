@@ -14,8 +14,8 @@ import bottle
 from bottle.ext.websocket import GeventWebSocketServer
 from bottle.ext.websocket import websocket
 
-
 ERROR_MESSAGE_NO_DATA = "The server failed to get the requested command."
+NO_NAMESPACE = "-None"
 
 def read_static_file(file_name):
     file_name = "./static-file/{}".format(file_name)
@@ -25,8 +25,10 @@ def read_static_file(file_name):
     print("!! 404 {}".format(file_name))
     return "404"
 
+
 def get_style_sheet():
     return read_static_file("css.css")
+
 
 class Params:
     kubeconfig_file = ""
@@ -47,10 +49,13 @@ class Params:
         self.cert_file = cert_file
         self.key_file = key_file
 
+
 params = Params()
 
-def get_home_link():
-    return "<a href='/'>Home</a>&nbsp;"
+
+def get_home_link(current_ns):
+    return f"<a href='/{current_ns}'>Home</a>&nbsp;"
+
 
 class RunCommand:
     def __init__(self, command_line, split_lines=True, pipe_as_input=None):
@@ -63,20 +68,18 @@ class RunCommand:
 
         logging.info("command line: %s", command_line)
 
-
         if pipe_as_input is None:
             process = Popen(shlex.split(command_line), \
-                        stdout=PIPE, stderr=PIPE)
+                            stdout=PIPE, stderr=PIPE)
 
             (output, error_out) = process.communicate()
             self.exit_code = process.wait()
         else:
             process = Popen(shlex.split(command_line), \
-                        stdin=PIPE, stdout=PIPE, stderr=PIPE)
+                            stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
             (output, error_out) = process.communicate(input=pipe_as_input.encode("utf-8"))
             self.exit_code = process.wait()
-
 
         if split_lines:
             self.lines = output.splitlines()
@@ -89,6 +92,7 @@ class RunCommand:
 
     def result(self):
         return self.exit_code, self.lines
+
 
 def make_error_message(command):
     return_value = ERROR_MESSAGE_NO_DATA
@@ -141,8 +145,8 @@ class TextCommand:
                 for field_pos in range(len(self.token_start)):
                     tstart = self.token_start[field_pos]
                     tend = self.token_end[field_pos]
-                    if  tend != -1:
-                        field_value = line[tstart : tend]
+                    if tend != -1:
+                        field_value = line[tstart: tend]
                     else:
                         field_value = line[tstart:]
                     line_vals.append(field_value.strip())
@@ -152,7 +156,6 @@ class TextCommand:
         logging.info("header: %s", self.titles)
         for line in self.parsed_lines:
             logging.info("line: %s", line)
-
 
 
 class ClientGoCmd:
@@ -167,7 +170,6 @@ class ClientGoCmd:
             command_text = "{} get {} -A".format(params.command_name, entity)
         else:
             command_text = "{} get {}".format(params.command_name, entity)
-
 
         if column_defs is not None:
             command_text += ClientGoCmd.make_column_filter(column_defs)
@@ -200,8 +202,8 @@ class ClientGoCmd:
 
         return command_text
 
-def find_index_in_list(slist, elem):
 
+def find_index_in_list(slist, elem):
     for i, item in enumerate(slist):
         if item == elem:
             return i
@@ -214,9 +216,10 @@ class HtmlTable:
         self.parsed_lines = parsed_lines
         self.html_text = ""
 
+    def reset(self):
+        self.html_text = ""
+
     def make_html(self, column_subset, link_cb, is_editable, editlink):
-        if self.html_text != "":
-            return self.html_text
         if link_cb is None:
             link_cb = HtmlTable.make_object_link_def
 
@@ -258,7 +261,7 @@ class HtmlTable:
         for pos in range(len(self.titles)):
             if column_subset is None or pos in column_subset:
                 title = self.titles[pos]
-                #hdr += '<th align="left"><a onclick="sortTable({})">{}</a></th>'.format(pos, title)
+                # hdr += '<th align="left"><a onclick="sortTable({})">{}</a></th>'.format(pos, title)
                 hdr += '<th align="left">{}</th>'.format(title)
         hdr += '</tr></thead>'
         return hdr
@@ -266,8 +269,8 @@ class HtmlTable:
     @staticmethod
     def make_sort_jscript():
         return "<script>\n" + \
-                read_static_file("sorttable/sort-table.min.js") + \
-                '</script>'
+               read_static_file("sorttable/sort-table.min.js") + \
+               '</script>'
 
     @staticmethod
     def make_object_link_def(line, title_pos):
@@ -275,8 +278,8 @@ class HtmlTable:
 
     @staticmethod
     def make_edit_row(editlink):
-        return '<tr id ="editform" style="display:none"><td>{} {}</td></tr>'.\
-                format(HtmlTable.make_edit_form(editlink), HtmlTable.make_delete_form(editlink))
+        return '<tr id ="editform" style="display:none"><td>{} {}</td></tr>'. \
+            format(HtmlTable.make_edit_form(editlink), HtmlTable.make_delete_form(editlink))
 
     @staticmethod
     def make_edit_form(editlink):
@@ -284,7 +287,6 @@ class HtmlTable:
 <input type="submit" value="save"/><br/>\
 <textarea name="edit" id="contentOnEdit" rows="40", cols="80"></textarea>\
 </form>'''.format(editlink[0])
-
 
     @staticmethod
     def make_delete_form(editlink):
@@ -319,20 +321,43 @@ function deleteobj() {
 </script>
 '''
 
+
+def namespace_list(namespace):
+    cmd = "kubectl get namespace -o go-template='{{range .items}}{{.metadata.name }}{{\"\\n\"}}{{end}}'"
+    run_command = RunCommand(cmd, split_lines=True)
+    html = """<script>
+        function on_ns_select() {
+            let elm = document.getElementById("namespace_list");
+            window.location.href = "/" + elm.value;
+        }
+    </script>"""
+    html += '<select id="namespace_list" onchange="on_ns_select()">'
+    html += f"<option value=''>all namespaces</option>"
+    for ns in run_command.lines:
+        sel = ""
+        ns = ns.decode('utf-8')
+        if ns == namespace:
+            sel = "selected"
+        html += f"<option value='{ns}' {sel}>{ns}</option>"
+    html += "</select>"
+    return html
+
+
 class ApiResources:
     def __init__(self):
         self.html_table = None
         self.name_index = None
         self.namespaced_index = None
         self.error_message = None
+        self.current_namespace = ""
 
     def load(self):
         cmd = params.command_name + " api-resources"
         run_command = RunCommand(cmd)
 
-        #for whatever reasons kubectl api-resources often returns error status,
-        #even it returned all resources.
-        #if run_command.exit_code == 0 and len(run_command.lines) != 0:
+        # for whatever reasons kubectl api-resources often returns error status,
+        # even it returned all resources.
+        # if run_command.exit_code == 0 and len(run_command.lines) != 0:
 
         if len(run_command.lines) != 0:
 
@@ -347,10 +372,17 @@ class ApiResources:
             self.html_table = None
             self.error_message = make_error_message(run_command)
 
-    def make_html(self, column_subset):
-        html = '<b>{}</b></br>'.format(get_home_link())
+    def make_html(self, column_subset, ns):
+        if ns == "":
+            ns = NO_NAMESPACE
+
+        home_link = format(get_home_link(ns))
+        ns_list = namespace_list(ns)
+        html = f"<b>{home_link}</b>&nbsp;{ns_list}</br>"
+        self.current_namespace = ns
 
         if self.html_table:
+            self.html_table.reset()
             html += self.html_table.make_html(column_subset, self.make_object_link, False, "")
         else:
             html += self.error_message
@@ -358,19 +390,24 @@ class ApiResources:
         return html
 
     def make_object_link(self, line, title_pos):
-        return '<a href="/objectinstances/{}/{}">{}</a>'.\
-                format(line[self.name_index], line[self.namespaced_index], line[title_pos])
+        return '<a href="/objectinstances/{}/{}/{}">{}</a>'. \
+            format(line[self.name_index], line[self.namespaced_index], self.current_namespace, line[title_pos])
+
 
 class ObjectListScreen:
 
-    def __init__(self, oname, namespaced, field_sel, label_sel):
+    def __init__(self, oname, namespaced, field_sel, label_sel, current_ns):
         cli_param = ""
 
         self.namespaced = namespaced
         self.object_type = oname
+        self.current_ns = current_ns
 
         if namespaced == "true":
-            cli_param = "-A"
+            if current_ns == NO_NAMESPACE:
+                cli_param = "-A"
+            else:
+                cli_param = f"-n {self.current_ns}  "
 
         add = ""
         if field_sel:
@@ -379,10 +416,10 @@ class ObjectListScreen:
         if label_sel:
             add += "--selector {}".format(label_sel)
 
-        cmd = "{} get {} -o wide {} --show-labels {}".format(\
-                params.command_name, oname, cli_param, add)
+        cmd = "{} get {} -o wide {} --show-labels {}".format( \
+            params.command_name, oname, cli_param, add)
         run_command = RunCommand(cmd)
-
+        print(f">{cmd}<")
         if run_command.exit_code == 0 and len(run_command.lines) != 0:
             text_command = TextCommand(run_command)
             self.name_index = find_index_in_list(text_command.titles, "NAME")
@@ -394,8 +431,15 @@ class ObjectListScreen:
             self.error_message = make_error_message(run_command)
 
     def make_html(self):
-        ret = get_home_link()
-        ret += self.get_self_link() + '</br>'
+        add = ""
+        if self.namespaced:
+            if self.current_ns != NO_NAMESPACE:
+                add = f"Selected Namespace: {self.current_ns}"
+            else:
+                add = "View objects from all namespaces"
+
+        ret = get_home_link(self.current_ns)
+        ret += self.get_self_link() + "&nbsp;|&nbsp;" + add + '</br>'
 
         ret += self.make_query_fields()
 
@@ -404,22 +448,22 @@ class ObjectListScreen:
         return ret + self.error_message
 
     def get_self_link(self):
-        return "<b><a href='/objectinstances/{0}/{1}'>{0}</a></b>&nbsp;".\
-                format(self.object_type, self.namespaced)
+        return "<b><a href='/objectinstances/{0}/{1}/{2}'>{0}</a></b>&nbsp;". \
+            format(self.object_type, self.namespaced, self.current_ns)
 
     def make_object_link(self, line, title_pos):
         if self.object_type != 'customresourcedefinitions':
             if self.namespace_index != -1:
-                link = '<a href="/objectinfo/get-yaml/{}/{}/{}/{}">{}</a>'.\
-                    format(self.object_type, line[self.name_index],\
-                            line[self.namespace_index], self.namespaced, line[title_pos])
-            else:
-                link = '<a href="/objectinfo/get-yaml/{}/{}/None/{}">{}</a>'.\
+                link = '<a href="/objectinfo/get-yaml/{}/{}/{}/{}">{}</a>'. \
                     format(self.object_type, line[self.name_index], \
-                            self.namespaced, line[title_pos])
+                           line[self.namespace_index], self.namespaced, line[title_pos])
+            else:
+                link = '<a href="/objectinfo/get-yaml/{}/{}/None/{}">{}</a>'. \
+                    format(self.object_type, line[self.name_index], \
+                           self.namespaced, line[title_pos])
         else:
-            link = '<a href="/crds/list-objects/{}">{}</a>'.\
-                    format(line[self.name_index], line[self.name_index])
+            link = '<a href="/crds/list-objects/{}">{}</a>'. \
+                format(line[self.name_index], line[self.name_index])
 
         return link
 
@@ -428,8 +472,9 @@ class ObjectListScreen:
 <td width="1%">LabelSelector</td>\
 <td><input name="labelsel"></td></tr>\
 <tr><td>FieldSelector:</td><td><input name="fieldsel"></td></tr></table>\
-<input type="submit" style="display: none" /></form>'''\
-        .format(self.object_type, self.namespaced)
+<input type="submit" style="display: none" /></form>''' \
+            .format(self.object_type, self.namespaced)
+
 
 class CrdScreen:
 
@@ -456,7 +501,6 @@ class CrdScreen:
             return hdr + html_table.make_html(None, self.make_object_link, False, '')
         return hdr + make_error_message(run_command)
 
-
     @staticmethod
     def make_hdr_links():
         ret = get_home_link()
@@ -465,12 +509,12 @@ class CrdScreen:
 
     def make_object_link(self, line, title_pos):
         if self.namespace_index != -1:
-            return '<a href="/crdinfo/get-yaml/{}/{}/{}">{}</a>'.\
-                    format(self.oname, line[self.name_index],\
-                            line[self.namespace_index], line[title_pos])
+            return '<a href="/crdinfo/get-yaml/{}/{}/{}">{}</a>'. \
+                format(self.oname, line[self.name_index], \
+                       line[self.namespace_index], line[title_pos])
 
-        return '<a href="/crdinfo/get-yaml/{}/{}/None">{}</a>'.\
-                    format(self.oname, line[self.name_index], line[title_pos])
+        return '<a href="/crdinfo/get-yaml/{}/{}/None">{}</a>'. \
+            format(self.oname, line[self.name_index], line[title_pos])
 
 
 class ObjectDetailScreenBase:
@@ -493,7 +537,6 @@ class ObjectDetailScreenBase:
                 return
         logging.error("Illegal screen type %s", screentype)
 
-
     @staticmethod
     def make_kubectl_cmd(request_def, namespace, otype, oname):
         nspace = ""
@@ -507,7 +550,7 @@ class ObjectDetailScreenBase:
         if run_command.exit_code == 0 and run_command.output != "":
             html_table = HtmlTable([cmd], run_command.output)
             self.html += html_table.make_html(None, None, is_editable, \
-                    ['/editobj/apply', '/editobj/delete'])
+                                              ['/editobj/apply', '/editobj/delete'])
         else:
             self.html += make_error_message(run_command)
 
@@ -523,9 +566,9 @@ class ObjectDetailScreenBase:
             if request_def[0] == screen_type:
                 ret += '<b>'
 
-            link = "<a href='/{}/{}/{}/{}/{}/{}'>{}</a>".\
-                    format(self.urlbase, request_def[0], otype, \
-                        oname, namespace, isnamespaced, request_def[0])
+            link = "<a href='/{}/{}/{}/{}/{}/{}'>{}</a>". \
+                format(self.urlbase, request_def[0], otype, \
+                       oname, namespace, isnamespaced, request_def[0])
 
             ret += link
 
@@ -536,8 +579,8 @@ class ObjectDetailScreenBase:
         if otype == "pods":
             container_names = self.list_containers()
             for container_name in container_names:
-                ret += '<a href="/shell-attach/{}/{}/{}/{}">attach-{}</a>'.\
-                        format(isnamespaced, oname, namespace, container_name, container_name)
+                ret += '<a href="/shell-attach/{}/{}/{}/{}">attach-{}</a>'. \
+                    format(isnamespaced, oname, namespace, container_name, container_name)
         return ret
 
     def make_back_link(self, otype, isnamespaced):
@@ -548,9 +591,9 @@ class ObjectDetailScreenBase:
         if self.namespaced:
             namespace_opt = '-n {}'.format(self.namespace)
 
-        list_cmd = "{} get pods {} {} -o jsonpath='{}'".\
-                format(params.command_name, namespace_opt, self.oname, \
-                    '{.spec.containers[*].name}')
+        list_cmd = "{} get pods {} {} -o jsonpath='{}'". \
+            format(params.command_name, namespace_opt, self.oname, \
+                   '{.spec.containers[*].name}')
         command = RunCommand(list_cmd, False)
 
         if command.exit_code != 0:
@@ -560,25 +603,22 @@ class ObjectDetailScreenBase:
         return command.output.split()
 
 
-
 class ObjectDetailScreen(ObjectDetailScreenBase):
     def __init__(self, screentype, otype, oname, namespace, namespaced):
-
         request_types = [['describe', '{} describe {} {} {}', False], \
-                              ['get-yaml', '{} get {} {} {} -o yaml', True],\
-                              ['get-json', '{} get {} {} {} -o json', False],\
-                              ['logs', '{} logs {}/{} {}', False]]
+                         ['get-yaml', '{} get {} {} {} -o yaml', True], \
+                         ['get-json', '{} get {} {} {} -o json', False], \
+                         ['logs', '{} logs {}/{} {}', False]]
 
-        super().__init__("objectinfo", screentype, otype, oname,\
-                        namespace, namespaced, request_types)
+        super().__init__("objectinfo", screentype, otype, oname, \
+                         namespace, namespaced, request_types)
 
 
 class CrdInfoScreen(ObjectDetailScreenBase):
     def __init__(self, screentype, otype, oname, namespace, namespaced):
-
-        request_types = [['get-yaml', '{} get {} {} {} -o yaml', True],\
-                             ['get-json', '{} get {} {} {} -o json', False],\
-                             ['crd-yaml', '{} describe customresourcedefinition {}', False]]
+        request_types = [['get-yaml', '{} get {} {} {} -o yaml', True], \
+                         ['get-json', '{} get {} {} {} -o json', False], \
+                         ['crd-yaml', '{} describe customresourcedefinition {}', False]]
 
         super().__init__("crdinfo", screentype, otype, oname, namespace, namespaced, request_types)
 
@@ -589,7 +629,7 @@ class CrdInfoScreen(ObjectDetailScreenBase):
 class EditObjectScreen:
     def __init__(self, action, object_to_save):
         self.message = ""
-        self.success_msg = {'apply' : "Object saved successfully", \
+        self.success_msg = {'apply': "Object saved successfully", \
                             'delete': "Object deleted successfully"}
         self.run(action, object_to_save)
 
@@ -603,13 +643,12 @@ class EditObjectScreen:
             self.message = make_error_message(run_command)
 
     def make_html(self):
-        return '{}<br/><button onclick="window.history.back();">Go Back</button>'\
-                .format(self.message)
+        return '{}<br/><button onclick="window.history.back();">Go Back</button>' \
+            .format(self.message)
 
 
 class TerminalAttachScreen(ObjectDetailScreen):
     def __init__(self, isnamespaced, podname, namespace, containername):
-
         self.isnamespaced = isnamespaced
         self.podname = podname
         self.namespace = namespace
@@ -626,21 +665,25 @@ class TerminalAttachScreen(ObjectDetailScreen):
         return ret + html
 
 
-
 api_resources_screen = ApiResources()
 
 app = bottle.Bottle()
-@app.route('/')
-def mainscr():
-    return api_resources_screen.make_html([0, 2, 4, 5])
 
-@app.route('/objectinstances/<oname>/<namespaced>', method=['GET', 'POST'])
-def objectlinkscr(oname, namespaced):
+
+@app.route("/")
+@app.route('/<namespace>')
+def mainscr(namespace=""):
+    return api_resources_screen.make_html([0, 2, 4, 5], namespace)
+
+
+@app.route('/objectinstances/<oname>/<namespaced>/<current_ns>', method=['GET', 'POST'])
+def objectlinkscr(oname, namespaced, current_ns):
     bottle.response.set_header('Cache-Control', 'no-store')
     field_sel = bottle.request.forms.get("fieldsel")
     label_sel = bottle.request.forms.get("labelsel")
-    object_screen = ObjectListScreen(oname, namespaced, field_sel, label_sel)
+    object_screen = ObjectListScreen(oname, namespaced, field_sel, label_sel, current_ns)
     return object_screen.make_html()
+
 
 @app.route('/objectinfo/<screentype>/<otype>/<instancename>/<namespace>/<isnamespaced>')
 def objectinfoscr(otype, screentype, instancename, namespace, isnamespaced):
@@ -648,17 +691,20 @@ def objectinfoscr(otype, screentype, instancename, namespace, isnamespaced):
     object_screen = ObjectDetailScreen(screentype, otype, instancename, namespace, isnamespaced)
     return object_screen.make_html()
 
+
 @app.route('/crds/<screentype>/<oname>')
 def crdscr(screentype, oname):
     bottle.response.set_header('Cache-Control', 'no-store')
     object_screen = CrdScreen(screentype, oname, None)
     return object_screen.make_html()
 
+
 @app.route('/crdinfo/<sccreentype>/<otype>/<oname>/<namespace>')
 def crdinfoscr(sccreentype, otype, oname, namespace):
     bottle.response.set_header('Cache-Control', 'no-store')
     object_screen = CrdInfoScreen(sccreentype, otype, oname, namespace, "")
     return object_screen.make_html()
+
 
 @app.route('/crdinfo/<sccreentype>/<otype>/<oname>/<namespace>/')
 def crdinfoscr2(sccreentype, otype, oname, namespace):
@@ -679,62 +725,63 @@ def edit_object_action(action):
 def get_static_file(fname):
     return read_static_file(fname)
 
+
 @app.route('/shell-attach/<isnamespaced>/<podname>/<namespace>/<containername>')
 def shell_attach(isnamespaced, podname, namespace, containername):
     terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace, containername)
     return terminal_attach.make_html()
 
-#@app.route('/socket.io/<fname:path>', apply=[websocket], method="GET")
+
+# @app.route('/socket.io/<fname:path>', apply=[websocket], method="GET")
 @app.get('/wssh', apply=[websocket], method="GET")
 def echo(web_socket):
-
     script_dir = os.path.dirname(os.path.abspath(__file__))
     cmd = "{}/kubeexec {}".format(script_dir, params.kubeconfig_file)
 
     process = Popen(shlex.split(cmd), \
-                        stdout=PIPE, stdin=PIPE) #, stderr=PIPE)
+                    stdout=PIPE, stdin=PIPE)  # , stderr=PIPE)
 
     stream = web_socket.stream.handler.rfile
     fd_stream = stream.fileno()
 
     fd_out = process.stdout.fileno()
 
-    #print("fd_out {} fd-stream {} fd_stream-in {}".\
+    # print("fd_out {} fd-stream {} fd_stream-in {}".\
     #   format(fd_out, fd_stream, process.stdin.fileno()))
 
     loop_select = True
     while loop_select:
         try:
-            #print("before select")
+            # print("before select")
             read_sock, _, error_socks = \
-                    select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
-            #print("after select read_events {} error_events {}".\
+                select([fd_stream, fd_out], [], [fd_stream, fd_out], 1)
+            # print("after select read_events {} error_events {}".\
             #        format(len(read_sock), len(error_socks)))
 
             if len(read_sock) != 0:
                 for sock in read_sock:
                     if sock == fd_out:
-                        #print("read from stdout")
+                        # print("read from stdout")
                         msg = process.stdout.readline()
                         if msg is None or len(msg) == 0:
                             loop_select = False
                             break
                         smsg = msg.decode('utf-8')
-                        #print("msg-from-kubectl {}".format(smsg))
+                        # print("msg-from-kubectl {}".format(smsg))
                         web_socket.send(smsg)
 
                     elif sock == fd_stream:
-                        #print("read from sock {}".format(sock))
+                        # print("read from sock {}".format(sock))
                         msg = web_socket.receive()
                         if msg is None or msg == "":
                             loop_select = False
                             break
-                        #print("msg-net {}".format(msg))
+                        # print("msg-net {}".format(msg))
                         msg += '\n'
                         process.stdin.write(msg.encode('utf-8'))
                         process.stdin.flush()
             if len(error_socks) != 0:
-                #print("error:")
+                # print("error:")
                 loop_select = False
                 break
         except WebSocketError:
@@ -756,25 +803,26 @@ def parse_cmd_line():
 '''
     parse = argparse.ArgumentParser(description=usage)
 
-    parse.add_argument('--command', '-c', type=str, default='kubectl', dest='kubectl',\
-            help='kubectl command name')
+    parse.add_argument('--command', '-c', type=str, default='kubectl', dest='kubectl', \
+                       help='kubectl command name')
 
-    parse.add_argument('--port', '-p', type=int, default=8000, dest='port',\
-            help='listening port')
+    parse.add_argument('--port', '-p', type=int, default=8000, dest='port', \
+                       help='listening port')
 
-    parse.add_argument('--host', '-i', type=str, dest='host', default='localhost',\
-            help='listening on host')
+    parse.add_argument('--host', '-i', type=str, dest='host', default='localhost', \
+                       help='listening on host')
 
-    parse.add_argument('--cert', '-r', type=str, dest='cert', default='',\
-            help='TLS certifificate file')
+    parse.add_argument('--cert', '-r', type=str, dest='cert', default='', \
+                       help='TLS certifificate file')
 
-    parse.add_argument('--key', '-k', type=str, dest='key', default='',\
-            help='TLS private key file')
+    parse.add_argument('--key', '-k', type=str, dest='key', default='', \
+                       help='TLS private key file')
 
-    parse.add_argument('--kubeconfig', '-f', type=str, dest='config', default='',\
-            help='kubeconfig directory (use default if empty)')
+    parse.add_argument('--kubeconfig', '-f', type=str, dest='config', default='', \
+                       help='kubeconfig directory (use default if empty)')
 
     return parse.parse_args()
+
 
 def set_info_logger():
     root = logging.getLogger()
@@ -785,20 +833,21 @@ def set_info_logger():
     console_handler = logging.StreamHandler()
     root.addHandler(console_handler)
 
+
 class GeventWebSocketServerSSL(bottle.ServerAdapter):
     def run(self, handler):
-        server = pywsgi.WSGIServer((self.host, self.port), handler,\
-                        handler_class=WebSocketHandler, \
-                        keyfile=params.key_file, certfile=params.cert_file)
+        server = pywsgi.WSGIServer((self.host, self.port), handler, \
+                                   handler_class=WebSocketHandler, \
+                                   keyfile=params.key_file, certfile=params.cert_file)
 
         server.serve_forever()
 
-def main():
 
+def main():
     cmd = parse_cmd_line()
 
-    logging.info("host: %s port: %s command: %s certfile: %s keyfile: %s",\
-                cmd.host, cmd.port, cmd.kubectl, cmd.cert, cmd.key)
+    logging.info("host: %s port: %s command: %s certfile: %s keyfile: %s", \
+                 cmd.host, cmd.port, cmd.kubectl, cmd.cert, cmd.key)
 
     params.set_config(cmd.kubectl, cmd.config)
 
