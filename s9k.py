@@ -30,6 +30,13 @@ def get_style_sheet():
     return read_static_file("css.css")
 
 
+def make_objectinstance_link(oname, namespaced, current_ns, title):
+    return f"<a href=\"/objectinstances/{oname}/{namespaced}/{current_ns}\">{title}</a>"
+
+
+def make_objectinfo_link(screentype, otype, instancename, namespace, isnamespaced, current_ns, title, typeof="objectinfo"):
+    return f"<a href=\"/{typeof}/{screentype}/{otype}/{instancename}/{namespace}/{isnamespaced}/{current_ns}\">{title}</a>"
+
 class Params:
     kubeconfig_file = ""
     command_name = "kubectl"
@@ -390,8 +397,7 @@ class ApiResources:
         return html
 
     def make_object_link(self, line, title_pos):
-        return '<a href="/objectinstances/{}/{}/{}">{}</a>'. \
-            format(line[self.name_index], line[self.namespaced_index], self.current_namespace, line[title_pos])
+        return make_objectinstance_link(line[self.name_index], line[self.namespaced_index], self.current_namespace, line[title_pos])
 
 
 class ObjectListScreen:
@@ -407,16 +413,22 @@ class ObjectListScreen:
             if current_ns == NO_NAMESPACE:
                 cli_param = "-A"
             else:
-                cli_param = f"-n {self.current_ns}  "
+                cli_param = f"-n {self.current_ns}"
 
         add = ""
-        if field_sel:
+
+        self.label_sel = ""
+        self.field_sel = ""
+        
+        if field_sel and field_sel != "":
+            self.field_sel = field_sel
             add += "--field-selector {}".format(field_sel)
 
-        if label_sel:
+        if label_sel and label_sel != "":
+            self.label_sel = label_sel
             add += "--selector {}".format(label_sel)
 
-        cmd = "{} get {} -o wide {} --show-labels {}".format( \
+        cmd = "{} get {} -o wide {} --show-labels {}".format(
             params.command_name, oname, cli_param, add)
         run_command = RunCommand(cmd)
         print(f">{cmd}<")
@@ -448,19 +460,19 @@ class ObjectListScreen:
         return ret + self.error_message
 
     def get_self_link(self):
-        return "<b><a href='/objectinstances/{0}/{1}/{2}'>{0}</a></b>&nbsp;". \
-            format(self.object_type, self.namespaced, self.current_ns)
+        return make_objectinstance_link(self.object_type, self.namespaced, self.current_ns, self.object_type)
 
     def make_object_link(self, line, title_pos):
         if self.object_type != 'customresourcedefinitions':
             if self.namespace_index != -1:
-                link = '<a href="/objectinfo/get-yaml/{}/{}/{}/{}">{}</a>'. \
-                    format(self.object_type, line[self.name_index], \
-                           line[self.namespace_index], self.namespaced, line[title_pos])
+                link = make_objectinfo_link(
+                    "get-yaml", self.object_type, line[self.name_index],
+                    line[self.namespace_index],
+                    self.namespaced, self.current_ns, line[title_pos])
             else:
-                link = '<a href="/objectinfo/get-yaml/{}/{}/None/{}">{}</a>'. \
-                    format(self.object_type, line[self.name_index], \
-                           self.namespaced, line[title_pos])
+                link = make_objectinfo_link(
+                    "get-yaml", self.object_type, line[self.name_index], "None",
+                    self.namespaced, self.current_ns, line[title_pos])
         else:
             link = '<a href="/crds/list-objects/{}">{}</a>'. \
                 format(line[self.name_index], line[self.name_index])
@@ -468,12 +480,12 @@ class ObjectListScreen:
         return link
 
     def make_query_fields(self):
-        return '''<form method="post" action="/objectinstances/{}/{}"><table><tr>\
+        return '''<form method="post" action="/objectinstances/{}/{}/{}"><table><tr>\
 <td width="1%">LabelSelector</td>\
-<td><input name="labelsel"></td></tr>\
-<tr><td>FieldSelector:</td><td><input name="fieldsel"></td></tr></table>\
-<input type="submit" style="display: none" /></form>''' \
-            .format(self.object_type, self.namespaced)
+<td><input name="labelsel" value="{}"></td></tr>\
+<tr><td>FieldSelector:</td><td><input name="fieldsel" value="{}"></td></tr></table>\
+<input type="submit" style="display: none" /></form>'''.format(self.object_type, self.namespaced, self.current_ns, \
+                                                               self.label_sel, self.field_sel)
 
 
 class CrdScreen:
@@ -509,16 +521,16 @@ class CrdScreen:
 
     def make_object_link(self, line, title_pos):
         if self.namespace_index != -1:
-            return '<a href="/crdinfo/get-yaml/{}/{}/{}">{}</a>'. \
-                format(self.oname, line[self.name_index], \
-                       line[self.namespace_index], line[title_pos])
+            return make_objectinfo_link(
+                       "get-yaml", self.oname, line[self.name_index],
+                       line[self.namespace_index], self.current_namespace, NO_NAMESPACE, [title_pos], "crdinfo")
 
-        return '<a href="/crdinfo/get-yaml/{}/{}/None">{}</a>'. \
-            format(self.oname, line[self.name_index], line[title_pos])
+        return make_objectinfo_link(
+            "get-yaml", self.oname, line[self.name_index], "None", NO_NAMESPACE, line[title_pos], "crdinfo")
 
 
 class ObjectDetailScreenBase:
-    def __init__(self, urlbase, screentype, otype, oname, namespace, namespaced, request_types):
+    def __init__(self, urlbase, screentype, otype, oname, namespace, namespaced, request_types, current_ns):
 
         self.request_types = request_types
         self.urlbase = urlbase
@@ -526,6 +538,7 @@ class ObjectDetailScreenBase:
         self.oname = oname
         self.namespaced = namespaced
         self.namespace = namespace
+        self.current_ns = current_ns  # for home linke
 
         self.html_header = self.make_hdr_links(screentype, otype, oname, namespace, namespaced)
         self.html = self.html_header
@@ -558,17 +571,17 @@ class ObjectDetailScreenBase:
         return self.html
 
     def make_hdr_links(self, screen_type, otype, oname, namespace, isnamespaced):
-        ret = get_home_link()
+        ret = get_home_link(self.current_ns)
 
-        ret += self.make_back_link(otype, isnamespaced)
+        ret += self.make_back_link(otype, isnamespaced) + "&nbsp;"
 
         for request_def in self.request_types:
             if request_def[0] == screen_type:
                 ret += '<b>'
 
-            link = "<a href='/{}/{}/{}/{}/{}/{}'>{}</a>". \
-                format(self.urlbase, request_def[0], otype, \
-                       oname, namespace, isnamespaced, request_def[0])
+            link = make_objectinfo_link(
+                request_def[0], otype,
+                oname, namespace, isnamespaced, self.current_ns, request_def[0], self.urlbase)
 
             ret += link
 
@@ -579,21 +592,22 @@ class ObjectDetailScreenBase:
         if otype == "pods":
             container_names = self.list_containers()
             for container_name in container_names:
-                ret += '<a href="/shell-attach/{}/{}/{}/{}">attach-{}</a>'. \
-                    format(isnamespaced, oname, namespace, container_name, container_name)
+                ret += '<a href="/shell-attach/{}/{}/{}/{}/{}">attach-{}</a>'. \
+                    format(isnamespaced, oname, namespace, container_name, self.current_ns, container_name)
         return ret
 
     def make_back_link(self, otype, isnamespaced):
-        return "<a href='/objectinstances/{0}/{1}'>{0}</a>&nbsp;".format(otype, isnamespaced)
+        return make_objectinstance_link(otype, isnamespaced, self.current_ns, otype)
 
     def list_containers(self):
         namespace_opt = ""
         if self.namespaced:
-            namespace_opt = '-n {}'.format(self.namespace)
+            namespace_opt = '-n {}'.format(self.current_ns)
 
         list_cmd = "{} get pods {} {} -o jsonpath='{}'". \
-            format(params.command_name, namespace_opt, self.oname, \
+            format(params.command_name, namespace_opt, self.oname,
                    '{.spec.containers[*].name}')
+
         command = RunCommand(list_cmd, False)
 
         if command.exit_code != 0:
@@ -604,23 +618,23 @@ class ObjectDetailScreenBase:
 
 
 class ObjectDetailScreen(ObjectDetailScreenBase):
-    def __init__(self, screentype, otype, oname, namespace, namespaced):
+    def __init__(self, screentype, otype, oname, namespace, namespaced, current_ns):
         request_types = [['describe', '{} describe {} {} {}', False], \
                          ['get-yaml', '{} get {} {} {} -o yaml', True], \
                          ['get-json', '{} get {} {} {} -o json', False], \
                          ['logs', '{} logs {}/{} {}', False]]
 
         super().__init__("objectinfo", screentype, otype, oname, \
-                         namespace, namespaced, request_types)
+                         namespace, namespaced, request_types, current_ns)
 
 
 class CrdInfoScreen(ObjectDetailScreenBase):
-    def __init__(self, screentype, otype, oname, namespace, namespaced):
+    def __init__(self, screentype, otype, oname, namespace, namespaced, current_ns):
         request_types = [['get-yaml', '{} get {} {} {} -o yaml', True], \
                          ['get-json', '{} get {} {} {} -o json', False], \
                          ['crd-yaml', '{} describe customresourcedefinition {}', False]]
 
-        super().__init__("crdinfo", screentype, otype, oname, namespace, namespaced, request_types)
+        super().__init__("crdinfo", screentype, otype, oname, namespace, namespaced, request_types, current_ns)
 
     def make_back_link(self, otype, _):
         return '<a href="/crds/list-objects/{0}">crd {0}</a>&nbsp;'.format(otype)
@@ -648,13 +662,13 @@ class EditObjectScreen:
 
 
 class TerminalAttachScreen(ObjectDetailScreen):
-    def __init__(self, isnamespaced, podname, namespace, containername):
+    def __init__(self, isnamespaced, podname, namespace, containername, current_ns):
         self.isnamespaced = isnamespaced
         self.podname = podname
         self.namespace = namespace
         self.containername = containername
 
-        super().__init__("terminal-attach", "pods", podname, namespace, isnamespaced)
+        super().__init__("terminal-attach", "pods", podname, namespace, isnamespaced, current_ns)
         super
 
     def make_html(self):
@@ -685,24 +699,24 @@ def objectlinkscr(oname, namespaced, current_ns):
     return object_screen.make_html()
 
 
-@app.route('/objectinfo/<screentype>/<otype>/<instancename>/<namespace>/<isnamespaced>')
-def objectinfoscr(otype, screentype, instancename, namespace, isnamespaced):
+@app.route('/objectinfo/<screentype>/<otype>/<instancename>/<namespace>/<isnamespaced>/<current_ns>')
+def objectinfoscr(otype, screentype, instancename, namespace, isnamespaced, current_ns):
     bottle.response.set_header('Cache-Control', 'no-store')
-    object_screen = ObjectDetailScreen(screentype, otype, instancename, namespace, isnamespaced)
+    object_screen = ObjectDetailScreen(screentype, otype, instancename, namespace, isnamespaced, current_ns)
     return object_screen.make_html()
 
 
 @app.route('/crds/<screentype>/<oname>')
-def crdscr(screentype, oname):
+def crdscr(screentype, oname, current_ns):
     bottle.response.set_header('Cache-Control', 'no-store')
-    object_screen = CrdScreen(screentype, oname, None)
+    object_screen = CrdScreen(screentype, oname, None, current_ns, NO_NAMESPACE)
     return object_screen.make_html()
 
 
 @app.route('/crdinfo/<sccreentype>/<otype>/<oname>/<namespace>')
-def crdinfoscr(sccreentype, otype, oname, namespace):
+def crdinfoscr(sccreentype, otype, oname, namespace, current_ns):
     bottle.response.set_header('Cache-Control', 'no-store')
-    object_screen = CrdInfoScreen(sccreentype, otype, oname, namespace, "")
+    object_screen = CrdInfoScreen(sccreentype, otype, oname, namespace, "", NO_NAMESPACE)
     return object_screen.make_html()
 
 
@@ -726,9 +740,9 @@ def get_static_file(fname):
     return read_static_file(fname)
 
 
-@app.route('/shell-attach/<isnamespaced>/<podname>/<namespace>/<containername>')
-def shell_attach(isnamespaced, podname, namespace, containername):
-    terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace, containername)
+@app.route('/shell-attach/<isnamespaced>/<podname>/<namespace>/<containername>/<current_ns>')
+def shell_attach(isnamespaced, podname, namespace, containername, current_ns):
+    terminal_attach = TerminalAttachScreen(isnamespaced, podname, namespace, containername, current_ns)
     return terminal_attach.make_html()
 
 
