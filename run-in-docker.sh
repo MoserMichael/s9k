@@ -94,6 +94,11 @@ if [[ $ACTION == 'start' ]]; then
 else 
   if [[ $ACTION == 'stop' ]]; then
     DOCKER_ID=$(docker ps | grep ${IMAGE_LOCATION}[[:space:]] | awk '{ print $1 }')
+    if [[ ${DOCKER_ID} == "" ]]; then
+        echo "Docker is already stopped"
+        exit 1
+    fi
+    echo "stopping docker container: $DOCKER_ID ..."
     docker stop $DOCKER_ID
   else
     Help 'must use either to start the server -r or to stop it -s'
