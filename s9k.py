@@ -535,7 +535,7 @@ class ObjectDetailScreenBase:
 
             link = make_objectinfo_link(
                 request_def[0], otype,
-                oname, namespace, isnamespaced, self.current_ns, request_def[0], self.urlbase)
+                oname, namespace, isnamespaced, self.namespace, request_def[0], self.urlbase)
 
             ret += link
 
@@ -547,16 +547,16 @@ class ObjectDetailScreenBase:
             container_names = self.list_containers()
             for container_name in container_names:
                 ret += '<a href="/shell-attach/{}/{}/{}/{}/{}">attach-{}</a>'. \
-                    format(isnamespaced, oname, namespace, container_name, self.current_ns, container_name)
+                    format(isnamespaced, oname, namespace, container_name, self.namespace, container_name)
         return ret
 
     def make_back_link(self, otype, isnamespaced):
-        return make_objectinstance_link(otype, isnamespaced, self.current_ns, otype)
+        return make_objectinstance_link(otype, isnamespaced, self.namespace, otype)
 
     def list_containers(self):
         namespace_opt = ""
         if self.namespaced:
-            namespace_opt = '-n {}'.format(self.current_ns)
+            namespace_opt = '-n {}'.format(self.namespace)
 
         list_cmd = "{} get pods {} {} -o jsonpath='{}'". \
             format(params.command_name, namespace_opt, self.oname,
