@@ -483,48 +483,6 @@ class ObjectListScreen:
 <input type="submit" style="display: none" /></form>'''.format(self.object_type, self.namespaced, self.current_ns, \
                                                                self.label_sel, self.field_sel)
 
-
-class CrdScreen:
-
-    def __init__(self, screentype, oname, nspace):
-
-        self.screentype = screentype
-        self.oname = oname
-        self.namespaced = nspace
-        self.namespace_index = -1
-        self.name_index = -1
-
-    def make_html(self):
-        hdr = CrdScreen.make_hdr_links()
-        cmd = '{} get -A {}'.format(params.command_name, self.oname)
-        run_command = RunCommand(cmd)
-
-        if run_command.exit_code == 0 and len(run_command.lines) != 0:
-            text_command = TextCommand(run_command)
-            html_table = HtmlTable(text_command.titles, text_command.parsed_lines)
-
-            self.namespace_index = find_index_in_list(html_table.titles, "NAMESPACE")
-            self.name_index = find_index_in_list(html_table.titles, "NAME")
-
-            return hdr + html_table.make_html(None, self.make_object_link, False, '')
-        return hdr + make_error_message(run_command)
-
-    @staticmethod
-    def make_hdr_links():
-        ret = get_home_link()
-        ret += '<b><a href="/objectinstances/customresourcedefinitions/false">crds</a></b><br/>'
-        return ret
-
-    def make_object_link(self, line, title_pos):
-        if self.namespace_index != -1:
-            return make_objectinfo_link(
-                       "get-yaml", self.oname, line[self.name_index],
-                       line[self.namespace_index], self.current_namespace, NO_NAMESPACE, [title_pos], "crdinfo")
-
-        return make_objectinfo_link(
-            "get-yaml", self.oname, line[self.name_index], "None", NO_NAMESPACE, line[title_pos], "crdinfo")
-
-
 class ObjectDetailScreenBase:
     def __init__(self, urlbase, screentype, otype, oname, namespace, namespaced, request_types, current_ns):
 
