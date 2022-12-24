@@ -419,7 +419,7 @@ class ObjectListScreen:
 
         self.label_sel = ""
         self.field_sel = ""
-        
+
         if field_sel and field_sel != "":
             self.field_sel = field_sel
             add += "--field-selector {}".format(field_sel)
@@ -463,19 +463,15 @@ class ObjectListScreen:
         return make_objectinstance_link(self.object_type, self.namespaced, self.current_ns, self.object_type)
 
     def make_object_link(self, line, title_pos):
-        if self.object_type != 'customresourcedefinitions':
-            if self.namespace_index != -1:
-                link = make_objectinfo_link(
-                    "get-yaml", self.object_type, line[self.name_index],
-                    line[self.namespace_index],
-                    self.namespaced, self.current_ns, line[title_pos])
-            else:
-                link = make_objectinfo_link(
-                    "get-yaml", self.object_type, line[self.name_index], "None",
-                    self.namespaced, self.current_ns, line[title_pos])
+        if self.namespace_index != -1:
+            link = make_objectinfo_link(
+                "get-yaml", self.object_type, line[self.name_index],
+                line[self.namespace_index],
+                self.namespaced, self.current_ns, line[title_pos])
         else:
-            link = '<a href="/crds/list-objects/{}">{}</a>'. \
-                format(line[self.name_index], line[self.name_index])
+            link = make_objectinfo_link(
+                "get-yaml", self.object_type, line[self.name_index], "None",
+                self.namespaced, self.current_ns, line[title_pos])
 
         return link
 
@@ -628,18 +624,6 @@ class ObjectDetailScreen(ObjectDetailScreenBase):
                          namespace, namespaced, request_types, current_ns)
 
 
-class CrdInfoScreen(ObjectDetailScreenBase):
-    def __init__(self, screentype, otype, oname, namespace, namespaced, current_ns):
-        request_types = [['get-yaml', '{} get {} {} {} -o yaml', True], \
-                         ['get-json', '{} get {} {} {} -o json', False], \
-                         ['crd-yaml', '{} describe customresourcedefinition {}', False]]
-
-        super().__init__("crdinfo", screentype, otype, oname, namespace, namespaced, request_types, current_ns)
-
-    def make_back_link(self, otype, _):
-        return '<a href="/crds/list-objects/{0}">crd {0}</a>&nbsp;'.format(otype)
-
-
 class EditObjectScreen:
     def __init__(self, action, object_to_save):
         self.message = ""
@@ -703,27 +687,6 @@ def objectlinkscr(oname, namespaced, current_ns):
 def objectinfoscr(otype, screentype, instancename, namespace, isnamespaced, current_ns):
     bottle.response.set_header('Cache-Control', 'no-store')
     object_screen = ObjectDetailScreen(screentype, otype, instancename, namespace, isnamespaced, current_ns)
-    return object_screen.make_html()
-
-
-@app.route('/crds/<screentype>/<oname>')
-def crdscr(screentype, oname, current_ns):
-    bottle.response.set_header('Cache-Control', 'no-store')
-    object_screen = CrdScreen(screentype, oname, None, current_ns, NO_NAMESPACE)
-    return object_screen.make_html()
-
-
-@app.route('/crdinfo/<sccreentype>/<otype>/<oname>/<namespace>')
-def crdinfoscr(sccreentype, otype, oname, namespace, current_ns):
-    bottle.response.set_header('Cache-Control', 'no-store')
-    object_screen = CrdInfoScreen(sccreentype, otype, oname, namespace, "", NO_NAMESPACE)
-    return object_screen.make_html()
-
-
-@app.route('/crdinfo/<sccreentype>/<otype>/<oname>/<namespace>/')
-def crdinfoscr2(sccreentype, otype, oname, namespace):
-    bottle.response.set_header('Cache-Control', 'no-store')
-    object_screen = CrdInfoScreen(sccreentype, otype, oname, namespace, "")
     return object_screen.make_html()
 
 
