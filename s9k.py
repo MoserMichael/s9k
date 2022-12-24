@@ -330,7 +330,7 @@ function deleteobj() {
 
 
 def namespace_list(namespace):
-    cmd = "kubectl get namespace -o go-template='{{range .items}}{{.metadata.name }}{{\"\\n\"}}{{end}}'"
+    cmd = params.command_name + " get namespace -o go-template='{{range .items}}{{.metadata.name }}{{\"\\n\"}}{{end}}'"
     run_command = RunCommand(cmd, split_lines=True)
     html = """<script>
         function on_ns_select() {
