@@ -444,14 +444,14 @@ class ObjectListScreen:
 
     def make_html(self):
         add = ""
-        if self.namespaced:
+        if self.namespaced == "true":
             if self.current_ns != NO_NAMESPACE:
-                add = f"Selected Namespace: {self.current_ns}"
+                add = f"|&nbsp;Selected Namespace: {self.current_ns}"
             else:
-                add = "View objects from all namespaces"
+                add = "|&nbsp;View objects from all namespaces"
 
         ret = get_home_link(self.current_ns)
-        ret += self.get_self_link() + "&nbsp;|&nbsp;" + add + '</br>'
+        ret += self.get_self_link() + "&nbsp;" + add + '</br>'
 
         ret += self.make_query_fields()
 
