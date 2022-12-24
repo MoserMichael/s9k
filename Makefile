@@ -19,7 +19,7 @@ clean:
 		rm -f kubeexec || true
 
 container-build:
-		docker build -f Dockerfile -t ghcr.io/mosermichael/s9k-mm:latest . 2>&1 | tee container-build.log
+		./build/container-build.sh 2>&1 | tee container-build.log
 
 container-push:
 		./container-push.sh ghcr.io/mosermichael/s9k-mm latest

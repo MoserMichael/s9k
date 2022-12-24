@@ -431,7 +431,6 @@ class ObjectListScreen:
         cmd = "{} get {} -o wide {} --show-labels {}".format(
             params.command_name, oname, cli_param, add)
         run_command = RunCommand(cmd)
-        print(f">{cmd}<")
         if run_command.exit_code == 0 and len(run_command.lines) != 0:
             text_command = TextCommand(run_command)
             self.name_index = find_index_in_list(text_command.titles, "NAME")
@@ -470,7 +469,7 @@ class ObjectListScreen:
                 self.namespaced, self.current_ns, line[title_pos])
         else:
             link = make_objectinfo_link(
-                "get-yaml", self.object_type, line[self.name_index], "None",
+                "get-yaml", self.object_type, line[self.name_index], self.current_ns,
                 self.namespaced, self.current_ns, line[title_pos])
 
         return link
@@ -611,7 +610,6 @@ class TerminalAttachScreen(ObjectDetailScreen):
         self.containername = containername
 
         super().__init__("terminal-attach", "pods", podname, namespace, isnamespaced, current_ns)
-        super
 
     def make_html(self):
         ret = self.html_header
