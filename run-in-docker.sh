@@ -80,7 +80,7 @@ done
 if [[ $ACTION == 'start' ]]; then
     
     if [[ "${SSL}" == "on" ]]; then
-        docker run --rm --name s9k-net -p $PORT:$PORT -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -e SSL=on -dt ${IMAGE_LOCATION} 
+        docker run --rm --name s9k-net -p ${HOST}:${PORT}:${PORT} -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -e SSL=on -dt ${IMAGE_LOCATION} 
         PROTO="https"
 
         echo ""

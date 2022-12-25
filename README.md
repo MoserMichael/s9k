@@ -1,6 +1,6 @@
 
 
-## Web based UI for managing kubernetes clusters
+# Web based UI for managing kubernetes clusters
 
 This is a simple web server that serves a web application designed to manage kubernetes clusters.
 You can view and modify all kubernetes api resources and attach a terminal to a container running in a pod.
@@ -15,27 +15,30 @@ This application is similar in functionality to [k9s](https://github.com/deraile
 
 Also please see [my comparison](https://github.com/MoserMichael/s9k/blob/master/compare-tui-webui.md) of the various management applications.
 
-### Running the script from docker image
+## Running the server in a docker container
 
-The following script in this repository runs the server in a docker environment; the public docker image is ghcr.io/mosermichael/s9k-mm latest
+- Download the following bash script ```curl ## Running the server in a docker container
 
-```
-./run-in-docker.sh -r
-```
-
-You can now access the web application by following url http://127.0.0.1:8000 
+- Download the following bash script ```curl https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh >run-in-docker.sh``` (or via link [run-in-docker.sh](https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh) )
+- ```chmod +x ./run-in-docker.sh```
 
 
-Or:
+### Running the server with TLS / with a self signed certificate
 
-```
-./run-in-docker.sh -r -t
-```
+- ```./run-in-docker.sh -r -t -p 9000`` This starts the local web server for this tool in the docker and uses ports 9000 
+- Use your browser and navigate to ```https://localhost:9000/```  The browser will display a warning on the self signed certificate, and you should click on the 'Advanced Settings' link and then click on the link named 'Proceed/Accept the risks'.
 
-You can now access the web application by following url https://127.0.0.1:8000 (a self-signed certificate is created on each run)
+Use of TLS with a self signed certificate means that all of the communication is encrypted, however someone may still have impersonated the server over the network (which is an acceptable risk, when working over a trusted local network)
+
+### Running the server with plain http
 
 
-Stop the web server with the following command:
+- ``` ./run-in-docker.sh -r ``` This starts the local web server for this tool in the docker and uses ports 8000 
+ 
+- Use your browser and navigate to ```http://localhost:9000/images.php```
+
+
+### Stop the web server with the following command:
 
 ```
 ./run-in-docker.sh -s
