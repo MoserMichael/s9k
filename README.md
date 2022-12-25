@@ -17,15 +17,13 @@ Also please see [my comparison](https://github.com/MoserMichael/s9k/blob/master/
 
 ## Running the server in a docker container
 
-- Download the following bash script ```curl ## Running the server in a docker container
-
 - Download the following bash script ```curl https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh >run-in-docker.sh``` (or via link [run-in-docker.sh](https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh) )
 - ```chmod +x ./run-in-docker.sh```
 
 
 ### Running the server with TLS / with a self signed certificate
 
-- ```./run-in-docker.sh -r -t -p 9000`` This starts the local web server for this tool in the docker and uses ports 9000 
+- ```./run-in-docker.sh -r -t -p 9000``` This starts the local web server for this tool in the docker and uses ports 9000 
 - Use your browser and navigate to ```https://localhost:9000/```  The browser will display a warning on the self signed certificate, and you should click on the 'Advanced Settings' link and then click on the link named 'Proceed/Accept the risks'.
 
 Use of TLS with a self signed certificate means that all of the communication is encrypted, however someone may still have impersonated the server over the network (which is an acceptable risk, when working over a trusted local network)
