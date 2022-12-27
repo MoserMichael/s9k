@@ -13,8 +13,6 @@ It works by parsing the output of kubectl. (click on picture for a presentation)
 
 This application is similar in functionality to [k9s](https://github.com/derailed/k9s), that is a character UI application for managing kubernetes clusters.
 
-Also please see [my comparison](https://github.com/MoserMichael/s9k/blob/master/compare-tui-webui.md) of the various management applications.
-
 ## Running the server in a docker container
 
 - Download the following bash script ```curl https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh >run-in-docker.sh``` (or via link [run-in-docker.sh](https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh) )

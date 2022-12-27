@@ -10,6 +10,20 @@ Both application cover the same domain: they are designed to manage a kubernetes
 
 This comparison is a bit subjective as it covers just one application and the experience of one user (that is my own one). Nevertheless i hope to come up with some useful observations.
 
+## The big problem
+
+Once upon a time we had the principle of [link](https://en.wikipedia.org/wiki/Unix_philosophy) of "Make each program do one thing well" etc. 
+Nowadays we have gargantuan CLI programs with many functions, such as 
+    - kubectl
+    - docker
+    - gcloud
+    - aws cli
+
+I think that the advantage of the former principle is that the user is left thew freedom and means to form his own sentences out of primitive statements, while solving his problem.
+Whereas with the big CLI approach one is left to google for exact incantations.
+
+Maybe here is where you are better off with a GUI... (but these can be messy as well, no doubt about that!)
+
 ## User productivity
 
 kubernetes objects tend to be interconnected: the pods are often created by deployment objects; there are also many attached objects like services or ingresses that are connected to the same pods via some shared annotations, as well as other pods that share the same namespace, etc. When a problem occurs it makes sense to examine a set of related objects.
@@ -17,6 +31,7 @@ kubernetes objects tend to be interconnected: the pods are often created by depl
 It appears that with k9s and s9k it is easier for me to make these connections; it may be that visual mode of thinking is involved when connecting the dots. With kubectl it takes longer to piece together all the command line arguments, and it is harder for me to maintain a global picture of the interconnections between api objects.
 
 Also about keeping things in context: The web UI s9k  I can open several tabs in the browser, each one looking at a different object; with the k9s application I can do the same by opening several tabs in the terminal; however things are slightly more awkward here - I need to wait for a second until the application starts and have to navigate again.
+
 
 ## UI response times
 
