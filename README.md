@@ -18,7 +18,7 @@ Also see [my ramblings & comparison](https://github.com/MoserMichael/s9k/blob/ma
 
 ## Running the server in a docker container
 
-- Download the following bash script ```curl https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh >run-in-docker.sh``` (or via link [run-in-docker.sh](https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh) )
+- Download the following bash script ```curl https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh >run-in-docker.sh``` (or via link [run-in-docker.sh](https://raw.githubusercontent.com/MoserMichael/s9k/master/notes/run-in-docker.sh) )
 - ```chmod +x ./run-in-docker.sh```
 
 
