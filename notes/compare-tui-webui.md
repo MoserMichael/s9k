@@ -1,5 +1,22 @@
 # the CLI vs TUI vs WebUI shootout
 
+## The big problem
+
+Once upon a time we had the principle of [link](https://en.wikipedia.org/wiki/Unix_philosophy) of "Make each program do one thing well" etc. 
+Nowadays we have gargantuan CLI programs with many functions, such as 
+
+- kubectl
+- docker
+- gcloud
+- aws cli
+
+I think that the advantage of the former principle is that the user is left thew freedom and means to form his own sentences out of primitive statements, while solving his problem.
+Whereas with the big CLI approach one is left to google for exact incantations.
+
+Maybe here is where you are better off with a GUI... (but these can be messy as well, no doubt about that!)
+
+## Intro 
+
 This article compares the UI experience of three applications that cover the same domain:
 
 1. [k9s](https://github.com/derailed/k9s) - written as a [Text based UI](https://en.wikipedia.org/wiki/Text-based_user_interface);
@@ -9,20 +26,6 @@ This article compares the UI experience of three applications that cover the sam
 Both application cover the same domain: they are designed to manage a kubernetes cluster, For k9s and s9j the main screen displays a list of all kubernetes api object types (this list is returned by command `kubectl api-resources` [described here](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#api-resources) ; upon choosing a resource you can inspect each of the object instances for a particular type, view the object description, view or change the definition of the object; view the logs for an object; For [Pod](https://kubernetes.io/docs/concepts/workloads/pods/) object you can also attach a terminal to a container running inside of the pod. Both k9s and s9k are GUI wrappers around kubectl.
 
 This comparison is a bit subjective as it covers just one application and the experience of one user (that is my own one). Nevertheless i hope to come up with some useful observations.
-
-## The big problem
-
-Once upon a time we had the principle of [link](https://en.wikipedia.org/wiki/Unix_philosophy) of "Make each program do one thing well" etc. 
-Nowadays we have gargantuan CLI programs with many functions, such as 
-    - kubectl
-    - docker
-    - gcloud
-    - aws cli
-
-I think that the advantage of the former principle is that the user is left thew freedom and means to form his own sentences out of primitive statements, while solving his problem.
-Whereas with the big CLI approach one is left to google for exact incantations.
-
-Maybe here is where you are better off with a GUI... (but these can be messy as well, no doubt about that!)
 
 ## User productivity
 
