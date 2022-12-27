@@ -13,7 +13,7 @@ Nowadays we have gargantuan CLI programs with many functions, such as
 I think that the UNIX philosophy is giving us the freedom and means to form our own sentences out of words.
 The program that does 'one thing well' is a word, while a small language like shell or awk provide the means and syntax for gluing it together.
 
-Now with the big CLI approach one is left to google for exact incantations...
+Now with the big CLI approach one has fewer options. It is harder to find out what to do, all one can hope for is to google for the correct solution.
 
 One may be better off with a GUI, instead of dealing with these big CLI systems. (However a GUI can be messy as well, no doubt about that!)
 
