@@ -11,7 +11,7 @@ Nowadays we have gargantuan CLI programs with many functions, such as
 - aws cli
 
 I think that the advantage of the former principle is that the user is left the freedom and means to form his own sentences out of words.
-The program that does 'one thing well' is a word, while a small language like shell or awk provide the syntax for gluing it together.
+The program that does 'one thing well' is a word, while a small language like shell or awk provide the means and syntax for gluing it together.
 
 Now with the big CLI approach one is left to google for exact incantations...
 
