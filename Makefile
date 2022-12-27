@@ -21,7 +21,4 @@ clean:
 container-build:
 		./build/container-build.sh 2>&1 | tee container-build.log
 
-container-push:
-		./container-push.sh ghcr.io/mosermichael/s9k-mm latest
-
 .PHONY: all kubexec-no-mod build init clean container-build container-push
