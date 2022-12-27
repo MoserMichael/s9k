@@ -2,7 +2,7 @@
 
 ## The big problem
 
-Once upon a time we had the principle of [link](https://en.wikipedia.org/wiki/Unix_philosophy) of "Make each program do one thing well" etc. 
+Once upon a time we had the [UNIX philosophy](https://en.wikipedia.org/wiki/Unix_philosophy) of "Make each program do one thing well" etc. 
 Nowadays we have gargantuan CLI programs with many functions, such as 
 
 - kubectl
@@ -10,10 +10,12 @@ Nowadays we have gargantuan CLI programs with many functions, such as
 - gcloud
 - aws cli
 
-I think that the advantage of the former principle is that the user is left thew freedom and means to form his own sentences out of primitive statements, while solving his problem.
-Whereas with the big CLI approach one is left to google for exact incantations.
+I think that the advantage of the former principle is that the user is left thew freedom and means to form his own sentences out of words.
+The program that does 'one thing well' is a word, while the shell or small languages like sed or awk provide the syntax for gluing it together.
 
-Maybe here is where you are better off with a GUI... (but these can be messy as well, no doubt about that!)
+Now with the big CLI approach one is left to google for exact incantations...
+
+One may be better off with a GUI, instead of dealing with these big CLI systems. (However a GUI can be messy as well, no doubt about that!)
 
 ## Intro 
 
