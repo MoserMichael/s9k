@@ -10,12 +10,14 @@ Nowadays we have gargantuan CLI programs with many functions, such as
 - gcloud
 - aws cli
 
-I think that the advantage of the former principle is that the user is left thew freedom and means to form his own sentences out of words.
+I think that the advantage of the former principle is that the user is left the freedom and means to form his own sentences out of words.
 The program that does 'one thing well' is a word, while the shell or small languages like sed or awk provide the syntax for gluing it together.
 
 Now with the big CLI approach one is left to google for exact incantations...
 
 One may be better off with a GUI, instead of dealing with these big CLI systems. (However a GUI can be messy as well, no doubt about that!)
+
+(Maybe the Unix Philosophy was a kind of unreachable ideal: for example the GNU CLI is also adding lots of features to many core utilities, and that would also not be in line with the UNIX Philosophy, as is. I am not sure about that.)
 
 ## Intro 
 
