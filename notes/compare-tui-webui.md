@@ -17,7 +17,7 @@ Now with the big CLI approach one is left to google for exact incantations...
 
 One may be better off with a GUI, instead of dealing with these big CLI systems. (However a GUI can be messy as well, no doubt about that!)
 
-(Maybe the Unix Philosophy was a kind of unreachable ideal: for example the GNU CLI is also adding lots of features to many core utilities, and that would also not be in line with the UNIX Philosophy, as is. I am not sure about that.)
+(Maybe the Unix Philosophy was a kind of unreachable ideal: for example the GNU CLI is also adding lots of features to many core utilities, and that would also not be in line with the UNIX Philosophy, as is.)
 
 ## Intro 
 
