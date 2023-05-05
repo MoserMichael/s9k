@@ -38,6 +38,7 @@ def make_objectinfo_link(screentype, otype, instancename, namespace, isnamespace
     return f"<a href=\"/{typeof}/{screentype}/{otype}/{instancename}/{namespace}/{isnamespaced}/{current_ns}\">{title}</a>"
 
 class Params:
+    context_arg=""
     kubeconfig_file = ""
     command_name = "kubectl"
     cert_file = "cert.pem"
@@ -46,11 +47,14 @@ class Params:
     def __init__(self):
         pass
 
-    def set_config(self, kubeconfig_cmd, kubeconfig_dir):
+    def set_config(self, kubeconfig_cmd, kubeconfig_dir, kubeconfig_context_name):
         self.command_name = kubeconfig_cmd
         if kubeconfig_dir != "":
             self.kubeconfig_file = " --kubeconfig={}/config".format(kubeconfig_dir)
             self.command_name += self.kubeconfig_file
+        if kubeconfig_context_name != "":
+            self.context_arg = " --context={}".format(kubeconfig_context_name)
+            self.command_name += self.context_arg
 
     def set_cert_files(self, key_file, cert_file):
         self.cert_file = cert_file
@@ -732,7 +736,7 @@ def echo(web_socket):
 
 
 def parse_cmd_line():
-    usage = '''Web application that parses kubectl output in a nice manner.
+    usage = '''Kubernetes portal/Web server that formats kubectl output in a nice manner.
 '''
     parse = argparse.ArgumentParser(description=usage)
 
@@ -753,6 +757,10 @@ def parse_cmd_line():
 
     parse.add_argument('--kubeconfig', '-f', type=str, dest='config', default='', \
                        help='kubeconfig directory (use default if empty)')
+
+    parse.add_argument('--context', '-x', type=str, dest='context', default='', \
+                   help='set kubeconfig context to use (use default context if empty)')
+
 
     return parse.parse_args()
 
@@ -779,10 +787,12 @@ class GeventWebSocketServerSSL(bottle.ServerAdapter):
 def main():
     cmd = parse_cmd_line()
 
+    logging.basicConfig(filename='s9k.log', level=logging.DEBUG)
+
     logging.info("host: %s port: %s command: %s certfile: %s keyfile: %s", \
                  cmd.host, cmd.port, cmd.kubectl, cmd.cert, cmd.key)
 
-    params.set_config(cmd.kubectl, cmd.config)
+    params.set_config(cmd.kubectl, cmd.config, cmd.context)
 
     api_resources_screen.load()
 

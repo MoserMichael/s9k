@@ -97,12 +97,11 @@ run make in project directory to build a go based executable required to attach 
 
 You can customize it with the following command line options
 ```
-usage: s9k.py [-h] [--command KUBECTL] [--port PORT] [--host HOST]
-              [--cert CERT] [--key KEY]
+usage: s9k.py [-h] [--command KUBECTL] [--port PORT] [--host HOST] [--cert CERT] [--key KEY] [--kubeconfig CONFIG] [--context CONTEXT]
 
-Web application that parses kubectl output in a nice manner.
+Kubernetes portal/Web server that formats kubectl output in a nice manner.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --command KUBECTL, -c KUBECTL
                         kubectl command name
@@ -110,7 +109,10 @@ optional arguments:
   --host HOST, -i HOST  listening on host
   --cert CERT, -r CERT  TLS certifificate file
   --key KEY, -k KEY     TLS private key file
-
+  --kubeconfig CONFIG, -f CONFIG
+                        kubeconfig directory (use default if empty)
+  --context CONTEXT, -x CONTEXT
+                        set kubeconfig context to use (use default if empty)
 ```
 
 ./s9k.sh runs the server, it also creates a self signed certificate for the server, connect to https://localhost:8000 (you get a browser warning on self signed certificates)

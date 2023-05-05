@@ -13,6 +13,7 @@ run s9k.py python script with tls, creates a self signed certificate if needed.
 -i  <host>  - listening host (default $HOST)
 -p  <port>  - listening port (default $PORT)
 -c  <cmd>   - (optional) kubectl command. (default kubectl)
+-x  <ctx>   - (optional) kubectl context to use
 -v          - verbose output
 -d          - internal option to run in docker (listen on eth0, and take kubeconfig from mounted path)
 -s          - use self signed sertificates
@@ -31,7 +32,7 @@ else
     SSL="off"
 fi
 
-while getopts "vhdi:p:c:" opt; do
+while getopts "vhdi:p:c:x:" opt; do
   case ${opt} in
     h)
 	Help
@@ -47,9 +48,15 @@ while getopts "vhdi:p:c:" opt; do
         HOST="$DHOST"
         PORT="$DPORT"
         MOUNT_OPT="--kubeconfig=/kube-mount"
+        if [[ $CONTEXT != "" ]]; then
+            MOUNT_OPT="$MOUNT_OPT -x $CONTEXT"
+        fi    
         ;;
     c)
-        CMD="-c $OPTARG"
+        CMD="${CMD} -c $OPTARG"
+        ;;
+    x)
+        CMD="${CMD} -x $OPTARG"
         ;;
     v)
         set -x

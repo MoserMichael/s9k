@@ -21,4 +21,4 @@ clean:
 container-build:
 		./build/container-build.sh 2>&1 | tee container-build.log
 
-.PHONY: all kubexec-no-mod build init clean container-build container-push
+.PHONY: all kubexec-no-mod build init clean container-build

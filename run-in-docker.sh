@@ -2,6 +2,7 @@
 
 PORT="8000"
 HOST=0.0.0.0
+CONTEXT=""
 KUBE_DIR="$HOME/.kube"
 IMAGE_LOCATION=ghcr.io/mosermichael/s9k-mm:latest
 
@@ -24,6 +25,7 @@ Start the web server for s9k
 -i  <host>  - listening host (default ${HOST})
 -d  <dir>   - directory where kube config is (default ${KUBE_DIR})
 -t          - enable TLS/SSL (self signed cert)
+-x          - set kubeconfig context to use (use default context if empty)
 
 Stop the web server for s9k
 
@@ -38,6 +40,23 @@ EOF
 
 exit 1
 }
+
+function assert_bins_in_path {
+  if [[ -n $ZSH_VERSION ]]; then
+    builtin whence -p "$1" &> /dev/null
+  else  # bash:
+    builtin type -P "$1" &> /dev/null
+  fi
+  if [[ $? != 0 ]]; then
+    echo "Error: $1 is not in the current path"
+    exit 1
+  fi
+  if [[ $# -gt 1 ]]; then
+    shift  # We've just checked the first one
+    assert_bins_in_path "$@"
+  fi
+}
+
 
 check_docker_engine_running() {
     assert_bins_in_path "docker"
@@ -67,7 +86,7 @@ clean_if_stopped() {
 
 SSL="off"
 
-while getopts "htrsvi:p:c:" opt; do
+while getopts "htrsvi:p:c:x:" opt; do
   case ${opt} in
     h)
         Help
@@ -80,6 +99,9 @@ while getopts "htrsvi:p:c:" opt; do
         ;;
     p)
         PORT="$OPTARG"
+        ;;
+    x)
+        CONTEXT="$OPTARG"
         ;;
     i)
         HOST="$OPTARG"
@@ -109,14 +131,14 @@ if [[ $ACTION == 'start' ]]; then
     clean_if_stopped
 
     if [[ "${SSL}" == "on" ]]; then
-        docker run --rm --name s9k-net -p ${HOST}:${PORT}:${PORT} -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -e SSL=on -l s9k-admin-console -dt ${IMAGE_LOCATION} 
+        docker run --rm --name s9k-net -p ${HOST}:${PORT}:${PORT} -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -e SSL=on -e CONTEXT=$CONTEXT -l s9k-admin-console -dt ${IMAGE_LOCATION} 
         PROTO="https"
 
         echo ""
         echo "Note: Runs with self signed certificate"
         echo ""
     else
-        docker run --rm --name s9k-net -p $PORT:$PORT -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -l s9k-admin-console -dt ${IMAGE_LOCATION} 
+        docker run --rm --name s9k-net -p $PORT:$PORT -v $KUBE_DIR:/kube-mount -e DHOST=$HOST -e DPORT=$PORT -e CONTEXT=$CONTEXT -l s9k-admin-console -dt ${IMAGE_LOCATION} 
         PROTO="http"
     fi
     echo "Listen on $PROTO://${HOST}:${PORT}"
