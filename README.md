@@ -14,84 +14,16 @@ It works by parsing the output of kubectl. (click on picture for a presentation)
 This application is similar in functionality to [k9s](https://github.com/derailed/k9s), that is a character UI application for managing kubernetes clusters.
 
 
-Also see [my ramblings & comparison](https://github.com/MoserMichael/s9k/blob/master/notes/compare-tui-webui.md) of the various management applications.
-
-## Running the server in a docker container
-
-- Download the following bash script ```curl https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh >run-in-docker.sh``` (or via link [run-in-docker.sh](https://raw.githubusercontent.com/MoserMichael/s9k/master/run-in-docker.sh) )
-- ```chmod +x ./run-in-docker.sh```
-
-
-### Running the server with TLS / with a self signed certificate
-
-- ```./run-in-docker.sh -r -t -p 9000``` This starts the local web server for this tool in the docker and uses ports 9000 
-- Use your browser and navigate to ```https://localhost:9000/```  The browser will display a warning on the self signed certificate, and you should click on the 'Advanced Settings' link and then click on the link named 'Proceed/Accept the risks'.
-
-Use of TLS with a self signed certificate means that all of the communication is encrypted, however someone may still have impersonated the server over the network (which is an acceptable risk, when working over a trusted local network)
-
-### Running the server with plain http
-
-
-- ``` ./run-in-docker.sh -r ``` This starts the local web server for this tool in the docker and uses ports 8000 
- 
-- Use your browser and navigate to ```http://localhost:9000/images.php```
-
-
-### Stop the web server with the following command:
-
-```
-./run-in-docker.sh -s
-```
-
-Additional options to run the script:
-
-```
-./run-in-docker.sh  -h
-
-
-Start s9k in docker
-
-./run-in-docker.sh -r [-p <port>] [-i <host>] [-d <dir>] [-v] [-c <image>]
-
-Stop s9k in docker
-
-Run s9k web server in a docker; by default the docker image is fetched from a public repository. (ghcr.io/mosermichael/s9k-mm:latest)
-The web server creates a self-signed certificate on each docker run
-
-Start the web server for s9k
-
--r          - start the web server
--p  <port>  - listening port (default 8000)
--i  <host>  - listening host (default 0.0.0.0)
--d  <dir>   - directory where kube config is (default /Users/mmoser/.kube)
--t          - enable TLS/SSL (self signed cert)
-
-Stop the web server for s9k
-
--s          - stop the web server
-
-Common options:
-
--c  <image> - override the container image location (default ghcr.io/mosermichael/s9k-mm:latest)
--v          - run verbosely
-
-```
-
 ### Running locally / Installing the requirements
 
-Need to have python3 on the system.
+You can build and setup the project with ```./run-local.sh``` - this will create the python virtual environment and build the go program required for attaching to a running POD from within the web application, as well as running the service on local port 8000
 
-Install dependent packages:
+Need to have python3 and golang on the system
 
-```
-sudo pip3 install bottle
-
-sudo pip3 install bottle-websocket
-```
-
-run make in project directory to build a go based executable required to attach a terminal to a container in a pod.
 
 ### Running the script locally
+
+You can also run the webs server locally via the following script:
 
 ./s9k.py runs the server; by default you can then connect to http://localhost:8000
 
