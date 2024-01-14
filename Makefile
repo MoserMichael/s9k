@@ -9,6 +9,11 @@ kubeexec: exec.go
 kubexec-no-mod: exec.go
 		GO111MODULE=off go build -o kubeexec github.com/MoserMichael/s9k
  
+initpython:
+		echo "*** creating virtual environment s9kenv ***"
+		python3 -m venv s9kenv
+		bash -c 'source s9kenv/bin/activate; pip3 install bottle bottle bottle-websocket'
+		echo "*** activate virtual environment with command: source s9kenv/bin/activate ***"
 
 init:
 		go mod init github.com/mosermichael/s9k
