@@ -21,9 +21,13 @@ init:
 		go mod vendor
 
 clean:
-		rm -f kubeexec || true
+		bash -c 'rm -f kubeexec go.mod go.sum; rm -rf vendor; true'
 
 container-build:
 		./build/container-build.sh 2>&1 | tee container-build.log
+
+
+old-container-build:
+		docker build -f Dockerfile -t ghcr.io/mosermichael/s9k-mm:latest . 2>&1 | tee container-build.log
 
 .PHONY: all kubexec-no-mod build init clean container-build

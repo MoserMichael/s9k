@@ -1,5 +1,5 @@
 # Build...
-FROM golang:1.14.4-alpine3.11 AS build
+FROM golang:1.21.6-alpine3.19 AS build
 
 RUN mkdir -p src/github.com/MoserMichael/s9k
 WORKDIR ./src/github.com/MoserMichael/s9k
@@ -13,7 +13,7 @@ RUN apk --no-cache add make curl && pwd && ls -al && make kubexec-no-mod  && ls 
 # -----------------------------------------------------------------------------
 # Build Image...
 
-FROM alpine:3.10.0
+FROM alpine:3.19
 
 COPY --from=build /go/src/github.com/MoserMichael/s9k/kubeexec /bin/kubeexec
 COPY --from=build /go/src/github.com/MoserMichael/s9k/s9k.py /bin/s9k.py
@@ -32,8 +32,9 @@ RUN apk update
 RUN apk add bash 
 RUN apk add --update ca-certificates 
 RUN apk add --update -t deps binutils file gcc make libc-dev libev python3-dev libffi-dev curl python3 py3-pip openssl 
-RUN pip3 install --upgrade pip
-RUN pip3 install bottle bottle bottle-websocket 
+
+RUN python3 -m venv env
+RUN bash -c 'source env/bin/activate; pip3 install --upgrade pip; pip3 install bottle bottle bottle-websocket' 
 RUN curl -L https://storage.googleapis.com/kubernetes-release/release/${KUBE_LATEST_VERSION}/bin/linux/amd64/kubectl -o /bin/kubectl 
 RUN chmod +x /bin/kubectl 
 RUN apk del gcc make curl 

@@ -13,45 +13,11 @@ It works by parsing the output of kubectl. (click on picture for a presentation)
 
 This application is similar in functionality to [k9s](https://github.com/derailed/k9s), that is a character UI application for managing kubernetes clusters.
 
-
-### Running locally / Installing the requirements
-
-You can build and setup the project with ```./run-local.sh``` - this will create the python virtual environment and build the go program required for attaching to a running POD from within the web application, as well as running the service on local port 8000
-
-Need to have python3 and golang on the system
-
-
-### Running the script locally
-
-You can also run the webs server locally via the following script:
-
-./s9k.py runs the server; by default you can then connect to http://localhost:8000
-
-You can customize it with the following command line options
-```
-usage: s9k.py [-h] [--command KUBECTL] [--port PORT] [--host HOST] [--cert CERT] [--key KEY] [--kubeconfig CONFIG] [--context CONTEXT]
-
-Kubernetes portal/Web server that formats kubectl output in a nice manner.
-
-options:
-  -h, --help            show this help message and exit
-  --command KUBECTL, -c KUBECTL
-                        kubectl command name
-  --port PORT, -p PORT  listening port
-  --host HOST, -i HOST  listening on host
-  --cert CERT, -r CERT  TLS certifificate file
-  --key KEY, -k KEY     TLS private key file
-  --kubeconfig CONFIG, -f CONFIG
-                        kubeconfig directory (use default if empty)
-  --context CONTEXT, -x CONTEXT
-                        set kubeconfig context to use (use default if empty)
-```
-
-./s9k.sh runs the server, it also creates a self signed certificate for the server, connect to https://localhost:8000 (you get a browser warning on self signed certificates)
-
-You can customize it with the following command line options
+### Running the server locally
 
 ```
+ ./s9k.sh -h
+
 ./s9k.sh  [-i <host>] [-p <port>] [-c <cmd>] [-v -h]
 
 run s9k.py python script with tls, creates a self signed certificate if needed.
@@ -59,9 +25,50 @@ run s9k.py python script with tls, creates a self signed certificate if needed.
 -i  <host>  - listening host (default localhost)
 -p  <port>  - listening port (default 8000)
 -c  <cmd>   - (optional) kubectl command. (default kubectl)
+-x  <ctx>   - (optional) kubectl context to use
 -v          - verbose output
 -d          - internal option to run in docker (listen on eth0, and take kubeconfig from mounted path)
+-s          - use self signed sertificates
 ```
+
+### Running the server in a docker container
+
+use ```./run-in-docker.sh``` o run he server in a docker container.
+
+!!!LIMITATION FOR DOCKER!!! you cant use a kubectl context where the server is running on localhost - the same machine. You don't have this problem when running locally
+
+```
+./run-in-docker.sh -h
+
+Start s9k in docker
+
+./run-in-docker.sh -r [-p <port>] [-i <host>] [-d <dir>] [-v] [-c <image>]
+
+Stop s9k in docker
+
+Run s9k web server in a docker; by default the docker image is fetched from a public repository. (ghcr.io/mosermichael/s9k-mm:latest)
+The web server creates a self-signed certificate on each docker run
+
+Start the web server for s9k
+
+-r          - start the web server
+-p  <port>  - listening port (default 8000)
+-i  <host>  - listening host (default 0.0.0.0)
+-d  <dir>   - directory where kube config is (default /home/user/.kube)
+-t          - enable TLS/SSL (self signed cert)
+-x          - set kubectl context to use (use default context if empty)
+
+Stop the web server for s9k
+
+-s          - stop the web server
+
+Common options:
+
+-c  <image> - override the container image location (default ghcr.io/mosermichael/s9k-mm:latest)
+-v          - run verbosely
+```
+
+
 
 ## Acknowledgements
 
